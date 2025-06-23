@@ -1,3 +1,13 @@
 <resources>
-    <string name="app_name">Superjump</string>
+    <string name="jouer">Jouer</string>
+    <string name="scores">Scores</string>
+    <string name="parametres">Paramètres</string>
+    <string name="niveau_1">Niveau 1</string>
+    <string name="niveau_2">Niveau 2</string>
+    <string name="niveau_3">Niveau 3</string>
+    <string name="niveau_4">Niveau 4</string>
+    <string name="mes_scores">Mes scores</string>
+    <string name="son_on_off">Son On/Off</string>
+    <string name="effacer_donnees">Effacer mes données</string>
+    <string name="son">Son</string>
 </resources>
