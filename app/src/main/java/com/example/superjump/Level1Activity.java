@@ -11,6 +11,7 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.os.Handler;
+import android.util.Log;
 import android.view.Surface;
 import android.view.animation.AccelerateInterpolator;
 import android.view.animation.DecelerateInterpolator;
@@ -19,28 +20,23 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
 
 public class Level1Activity extends AppCompatActivity implements SensorEventListener {
+    private static final float MOVEMENT_SENSITIVITY = 10.0f;
+    private static final float JUMP_HEIGHT = 1000f;
+    private static final long JUMP_DURATION = 400;
+    private static final long HORIZONTAL_ANIMATION_DURATION = 50;
 
-    private ImageView characterImageView;
+    // screen elements
     private ConstraintLayout gameAreaLayout;
+    private ImageView characterImageView;
 
-    // Variables pour l'accéléromètre
+    // sensor elements to move character
     private SensorManager sensorManager;
     private Sensor accelerometer;
-    private static final float MOVEMENT_SENSITIVITY = 10.0f;
-    private static final float ACCELEROMETER_FILTER_ALPHA = 0.1f; // Optionnel
-
-    // Variables pour le saut
     private ValueAnimator jumpAnimator;
-    private float groundY; // Position Y du sol
-    private static final float JUMP_HEIGHT = 1000f; // Hauteur du saut en pixels
-    private static final long JUMP_DURATION = 400; // Durée pour monter ou descendre (total 1s)
-    private boolean isJumping = false;
-
     private ValueAnimator xPositionAnimator;
-    private static final long HORIZONTAL_ANIMATION_DURATION = 50; // Durée courte pour la réactivité
+    private float groundY;
 
-    // Supprimé les variables liées au toucher et aux ValueAnimator X/Y précédents
-    // pour se concentrer sur l'accéléromètre pour X et le saut pour Y.
+    private boolean isJumping = false;
 
     @SuppressLint("ClickableViewAccessibility")
     @Override
@@ -48,6 +44,7 @@ public class Level1Activity extends AppCompatActivity implements SensorEventList
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_level1);
 
+        //Variables initialization
         characterImageView = findViewById(R.id.imageView_perso);
         gameAreaLayout = findViewById(R.id.main);
 
@@ -56,20 +53,14 @@ public class Level1Activity extends AppCompatActivity implements SensorEventList
             accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         }
 
-        // Attendre que le layout soit dessiné pour obtenir les dimensions correctes
-        // et initialiser la position du personnage et le "sol"
+        // wait until layout is drawn to get correct dimensions and initialize character position and ground
         gameAreaLayout.post(() -> {
-            // Positionner le personnage initialement en bas de la gameArea
-            // (ou à une position de départ souhaitée)
-            groundY = gameAreaLayout.getHeight() - characterImageView.getHeight() - 135f; // 50f est une marge du bas
-            characterImageView.setX(gameAreaLayout.getWidth() / 2f - characterImageView.getWidth() / 2f); // Centrer horizontalement
+            // position character at the wanted position
+            groundY = gameAreaLayout.getHeight() - characterImageView.getHeight() - 145f;
+            characterImageView.setX(gameAreaLayout.getWidth() / 2f - characterImageView.getWidth() / 2f); // horizontal center
             characterImageView.setY(groundY);
 
-            // Déclencher le premier saut (ou le configurer pour se répéter)
-            // Pour un seul saut au démarrage:
-            performJump();
-
-            // Si vous voulez que le personnage saute continuellement (exemple simple)
+            // repeat jump continuously
              Handler handler = new Handler();
              Runnable repetitiveJump = new Runnable() {
                  @Override
@@ -77,48 +68,38 @@ public class Level1Activity extends AppCompatActivity implements SensorEventList
                      if (!isJumping) {
                          performJump();
                      }
-                     handler.postDelayed(this, 0); // Saute toutes les X secondes
+                     handler.postDelayed(this, 0);
                  }
              };
              handler.post(repetitiveJump);
-
-            // Si le saut est déclenché par un toucher (exemple)
-            /*
-            gameAreaLayout.setOnTouchListener((v, event) -> {
-                if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                    if (!isJumping) {
-                        performJump();
-                    }
-                }
-                return true; // Consomme l'événement tactile
-            });
-            */
         });
     }
 
+    /// @summary perform a jump
     private void performJump() {
         if (isJumping) {
-            return; // Déjà en train de sauter
+            return;
         }
         isJumping = true;
 
-        // Animateur pour la montée
+        // high animation for jump
         ValueAnimator riseAnimator = ValueAnimator.ofFloat(characterImageView.getY(), groundY - JUMP_HEIGHT);
         riseAnimator.setDuration(JUMP_DURATION);
-        riseAnimator.setInterpolator(new DecelerateInterpolator()); // Monte rapidement puis ralentit
+        riseAnimator.setInterpolator(new DecelerateInterpolator()); // Go up quick then slow down
         riseAnimator.addUpdateListener(animation -> {
             characterImageView.setY((Float) animation.getAnimatedValue());
         });
 
-        // Animateur pour la descente
+        // Animation for fall
         ValueAnimator fallAnimator = ValueAnimator.ofFloat(groundY - JUMP_HEIGHT, groundY);
         fallAnimator.setDuration(JUMP_DURATION);
-        fallAnimator.setInterpolator(new AccelerateInterpolator()); // Descend lentement puis accélère
+        fallAnimator.setInterpolator(new AccelerateInterpolator()); // Go down slowly then more quickly
         fallAnimator.addUpdateListener(animation -> {
             characterImageView.setY((Float) animation.getAnimatedValue());
         });
 
         // Enchaîner les animations
+
         riseAnimator.addListener(new AnimatorListenerAdapter() {
             @Override
             public void onAnimationEnd(Animator animation) {
@@ -130,15 +111,13 @@ public class Level1Activity extends AppCompatActivity implements SensorEventList
             @Override
             public void onAnimationEnd(Animator animation) {
                 isJumping = false;
-                characterImageView.setY(groundY); // S'assurer qu'il est bien au sol
-                // Ici, vous pourriez déclencher le prochain saut si vous voulez un saut continu
-                // ou attendre une autre action.
+                characterImageView.setY(groundY); // make sure character is on the ground
             }
         });
 
-        // Démarrer la montée
+        // start to jump
         riseAnimator.start();
-        jumpAnimator = riseAnimator; // Garder une référence si besoin de l'annuler
+        jumpAnimator = riseAnimator; // keep a reference to the jump animation for cancellation later
     }
 
 
@@ -159,32 +138,28 @@ public class Level1Activity extends AppCompatActivity implements SensorEventList
         if (xPositionAnimator != null && xPositionAnimator.isRunning()) {
             xPositionAnimator.cancel();
         }
-        // Annuler l'animation de saut si l'activité est mise en pause
+
+        // cancel animation when activity is paused
         if (jumpAnimator != null && jumpAnimator.isRunning()) {
             jumpAnimator.cancel();
-            isJumping = false; // Réinitialiser l'état
+            isJumping = false; // Reinitialized to false
         }
     }
 
     @Override
     public void onSensorChanged(SensorEvent event) {
         if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
-            // ... (calcul de rawSensorValueX et currentFilteredAccX si vous utilisez le filtre) ...
             float rawSensorValueX;
+            float movement = 0;
+
             int rotation = getWindowManager().getDefaultDisplay().getRotation();
             if (rotation == Surface.ROTATION_0 || rotation == Surface.ROTATION_180) {
                 rawSensorValueX = event.values[0];
-            } else {
-                rawSensorValueX = event.values[1];
+                movement = -rawSensorValueX * MOVEMENT_SENSITIVITY;
             }
-            // Optionnel: appliquer filtre si souhaité
-            // currentFilteredAccX = ACCELEROMETER_FILTER_ALPHA * rawSensorValueX + (1 - ACCELEROMETER_FILTER_ALPHA) * currentFilteredAccX;
-            // float valueToUseForMovement = currentFilteredAccX; // Ou rawSensorValueX si pas de filtre
-
-            float movement = -rawSensorValueX * MOVEMENT_SENSITIVITY; // Utilisez la valeur appropriée
             float targetX = characterImageView.getX() + movement;
 
-            // Limiter le mouvement aux bords
+            // limit movements to the screen
             float minX = 0;
             float maxX = gameAreaLayout.getWidth() - characterImageView.getWidth();
             targetX = Math.max(minX, Math.min(targetX, maxX));
@@ -193,11 +168,13 @@ public class Level1Activity extends AppCompatActivity implements SensorEventList
         }
     }
 
+    /// @summary method not used in this version, present for the SensorEventListener interface
     @Override
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
-        // Peut être ignoré
+
     }
 
+    /// @summary animate the character to a new position
     private void animateCharacterToX(float targetX) {
         if (xPositionAnimator != null && xPositionAnimator.isRunning()) {
             xPositionAnimator.cancel(); // Annule l'animation en cours pour démarrer la nouvelle
@@ -211,6 +188,4 @@ public class Level1Activity extends AppCompatActivity implements SensorEventList
         );
         xPositionAnimator.start();
     }
-    // Si vous aviez des animateurs X/Y spécifiques avant, ils peuvent être supprimés
-    // ou adaptés si le saut doit aussi affecter X (ce qui n'est pas le cas dans cette demande)
 }
