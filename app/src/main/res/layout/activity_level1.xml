@@ -45,7 +45,7 @@
             android:translationY="-50dp"
             android:visibility="visible"
             app:layout_constraintBottom_toBottomOf="@id/imageView_background"
-            app:srcCompat="@drawable/plateforme_v2" />
+            app:srcCompat="@drawable/plateforme_v1" />
     </FrameLayout>
 
 
