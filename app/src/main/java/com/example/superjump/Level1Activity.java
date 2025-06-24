@@ -1,15 +1,21 @@
 package com.example.superjump;
 
 import android.content.Context;
+import android.graphics.Rect;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.os.Handler;
+import android.view.ViewTreeObserver;
 import android.widget.ImageView;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
 
 public class Level1Activity extends AppCompatActivity implements SensorEventListener {
     // screen elements
@@ -19,10 +25,13 @@ public class Level1Activity extends AppCompatActivity implements SensorEventList
     // sensor elements to move character
     private SensorManager sensorManager;
     private Sensor accelerometer;
+
+    // classes helpers
+    private PlatformCreationHelper platformCreator;
+    private List<ImageView> activePlatforms; // Pour garder une référence aux plateformes si nécessaire
     private CharacterMovementHelper characterMovementHelper;
     private final Handler jumpHandler = new Handler();
     private Runnable repetitiveJumpRunnable;
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -33,9 +42,15 @@ public class Level1Activity extends AppCompatActivity implements SensorEventList
         gameAreaLayout = findViewById(R.id.main);
 
         gameAreaLayout.post(() -> {
+
             characterMovementHelper = new CharacterMovementHelper(characterImageView, gameAreaLayout);
 
             characterMovementHelper.updateGroundY(); // update vertical position
+
+            // Initialiser et utiliser le PlatformCreationHelper
+            platformCreator = new PlatformCreationHelper(Level1Activity.this, gameAreaLayout, characterImageView);
+            // Vous pouvez utiliser les valeurs par défaut du helper :
+            activePlatforms = platformCreator.creerPlateformes();
 
             // repeat jump
             repetitiveJumpRunnable = new Runnable() {
@@ -96,5 +111,4 @@ public class Level1Activity extends AppCompatActivity implements SensorEventList
     @Override
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
     }
-
 }
