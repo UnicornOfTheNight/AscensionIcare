@@ -175,14 +175,14 @@ public class Level1Activity extends AppCompatActivity implements SensorEventList
     }
 
     /// @summary animate the character to a new position
+    /// @param targetX the new position of the character
     private void animateCharacterToX(float targetX) {
         if (xPositionAnimator != null && xPositionAnimator.isRunning()) {
-            xPositionAnimator.cancel(); // Annule l'animation en cours pour démarrer la nouvelle
+            xPositionAnimator.cancel(); // cancel running animation to launch new one
         }
         xPositionAnimator = ValueAnimator.ofFloat(characterImageView.getX(), targetX);
         xPositionAnimator.setDuration(HORIZONTAL_ANIMATION_DURATION);
-        // Utiliser un Interpolator linéaire ou un DecelerateInterpolator pour une sensation naturelle
-        xPositionAnimator.setInterpolator(new DecelerateInterpolator());
+        xPositionAnimator.setInterpolator(new DecelerateInterpolator()); // use decelerateInterceptor to make it more natural
         xPositionAnimator.addUpdateListener(animation ->
                 characterImageView.setX((Float) animation.getAnimatedValue())
         );
