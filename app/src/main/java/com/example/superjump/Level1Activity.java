@@ -19,6 +19,8 @@ import android.widget.ImageView;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
 
+import java.util.concurrent.atomic.AtomicReference;
+
 public class Level1Activity extends AppCompatActivity {
     private Character character = null;
 
@@ -28,6 +30,8 @@ public class Level1Activity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_level1);
 
-        character = new Character(this);
+        character = new Character(new AtomicReference<>(this));
+
+
     }
 }

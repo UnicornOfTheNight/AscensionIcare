@@ -32,7 +32,7 @@
             android:layout_gravity="bottom|center"
             android:contentDescription="@string/character_image"
             android:elevation="4dp"
-            android:translationY="-50dp"
+            android:translationY="-35dp"
             android:visibility="visible"
             app:layout_constraintBottom_toTopOf="@id/imageView_plateforme"
             app:srcCompat="@drawable/personnage" />
@@ -44,7 +44,7 @@
             android:layout_gravity="bottom|center"
             android:contentDescription="@string/background_image_for_level_1"
             android:elevation="4dp"
-            android:translationY="-10dp"
+            android:translationY="0dp"
             android:visibility="visible"
             app:layout_constraintBottom_toBottomOf="@id/imageView_background"
             app:srcCompat="@drawable/plateforme_v1" />

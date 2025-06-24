@@ -39,8 +39,8 @@ public class Character extends AppCompatActivity implements SensorEventListener 
 
     public boolean isJumping = false;
 
-    public Character(AppCompatActivity p_screen){
-        screen = new AtomicReference<AppCompatActivity>(p_screen);
+    public Character(AtomicReference<AppCompatActivity> p_screen){
+        screen = p_screen;
 
         characterImageView = screen.get().findViewById(R.id.imageView_perso);
         gameAreaLayout = screen.get().findViewById(R.id.main);
@@ -50,6 +50,26 @@ public class Character extends AppCompatActivity implements SensorEventListener 
             accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         }
 
+        // wait until layout is drawn to get correct dimensions and initialize character position and groundMore actions
+        gameAreaLayout.post(() -> {
+            // position character at the wanted position
+            groundY = gameAreaLayout.getHeight() - characterImageView.getHeight() - 35f;
+            characterImageView.setX(gameAreaLayout.getWidth() / 2f - characterImageView.getWidth() / 2f); // horizontal center
+            characterImageView.setY(groundY);
+
+            // repeat jump continuously
+            Handler handler = new Handler();
+            Runnable repetitiveJump = new Runnable() {
+                @Override
+                public void run() {
+                    if (!isJumping) {
+                        performJump();
+                    }
+                    handler.postDelayed(this, 0);
+                }
+            };
+            handler.post(repetitiveJump);
+        });
     }
 
     @Override
