@@ -41,18 +41,18 @@ public class MainActivity extends AppCompatActivity {
     private Button bt_effacer_donnees;
     private SwitchMaterial switch_son;
 
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
-
-        // Manage insets for EdgeToEdge
-         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
-         });
+        });
 
         // initialize elements
         tabLayoutMenu = findViewById(R.id.tabLayout_menu);
@@ -85,8 +85,15 @@ public class MainActivity extends AppCompatActivity {
             public void onTabReselected(TabLayout.Tab tab) {
 
             }
+
         });
+
+        int tabToOpen = getIntent().getIntExtra("goToTab", -1);
+        if (tabToOpen != -1) {
+            tabLayoutMenu.selectTab(tabLayoutMenu.getTabAt(tabToOpen));
+        }
     }
+
 
      /// @summary Load the sound preference from SharedPreferences
      /// @return true if sound is enabled, false otherwise

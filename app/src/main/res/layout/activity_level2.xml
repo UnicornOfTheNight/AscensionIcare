@@ -53,6 +53,7 @@
             android:text="Retourner"
             android:textColor="#FFFFFF" />
 
+
         <Button
             android:id="@+id/quitButton"
             android:layout_width="wrap_content"

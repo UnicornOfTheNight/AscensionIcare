@@ -142,5 +142,6 @@
                 android:text="@string/effacer_donnees" />
 
         </LinearLayout>
+
     </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>
