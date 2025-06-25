@@ -8,23 +8,31 @@ import androidx.core.animation.AccelerateInterpolator;
 import android.content.Context;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
+import android.util.Log;
 import android.view.Surface;
 import android.widget.ImageView;
 import androidx.constraintlayout.widget.ConstraintLayout;
 
 public class CharacterMovementHelper {
-    private ImageView characterImageView;
-    private ConstraintLayout gameAreaLayout;
-
-    private float groundY;
-    private boolean isJumping = false;
-    private ValueAnimator jumpAnimator;
-    private ValueAnimator xPositionAnimator;
-
+    ///  variables statiques
     private static final float JUMP_HEIGHT = 1000f;
     private static final long JUMP_DURATION = 400;
     private static final float MOVEMENT_SENSITIVITY = 10.0f;
     private static final long HORIZONTAL_ANIMATION_DURATION = 50;
+    //private static final float GRAVITY = 2.0f;
+
+    /// variable des graphiques
+    private ImageView characterImageView;
+    private ConstraintLayout gameAreaLayout;
+
+    /// variables d'animation
+    private ValueAnimator xPositionAnimator;
+    private ValueAnimator fallAnimator;
+    private ValueAnimator riseAnimator;
+
+    ///  autres variables
+    private float groundY;
+    private boolean isJumping = false;
 
     /// @summary Class constructor
     /// @param characterImageView ImageView of the character
@@ -46,15 +54,16 @@ public class CharacterMovementHelper {
         isJumping = true;
 
         // high animation for jump
-        ValueAnimator riseAnimator = ValueAnimator.ofFloat(characterImageView.getY(), groundY - JUMP_HEIGHT);
+        riseAnimator = ValueAnimator.ofFloat(characterImageView.getY(), groundY - JUMP_HEIGHT);
         riseAnimator.setDuration(JUMP_DURATION);
         riseAnimator.setInterpolator(new DecelerateInterpolator()); // Go up quick then slow down
         riseAnimator.addUpdateListener(animation -> {
             characterImageView.setY((Float) ((ValueAnimator)animation).getAnimatedValue());
         });
 
+
         // Animation for fall
-        ValueAnimator fallAnimator = ValueAnimator.ofFloat(groundY - JUMP_HEIGHT, groundY);
+        fallAnimator = ValueAnimator.ofFloat(groundY - JUMP_HEIGHT, groundY);
         fallAnimator.setDuration(JUMP_DURATION);
         fallAnimator.setInterpolator(new AccelerateInterpolator()); // Go down slowly then more quickly
         fallAnimator.addUpdateListener(animation -> {
@@ -78,7 +87,6 @@ public class CharacterMovementHelper {
         });
 
         riseAnimator.start();  // start to jump
-        jumpAnimator = riseAnimator; // keep a reference to the jump animation for cancellation later
     }
 
     /// @summary handle sensor events
@@ -124,9 +132,12 @@ public class CharacterMovementHelper {
         if (xPositionAnimator != null && xPositionAnimator.isRunning()) {
             xPositionAnimator.cancel();
         }
-        if (jumpAnimator != null && jumpAnimator.isRunning()) {
-            jumpAnimator.cancel();
-            isJumping = false;
+        if (riseAnimator != null && riseAnimator.isRunning()) {
+            riseAnimator.cancel();
+        }
+
+        if (fallAnimator != null && fallAnimator.isRunning()) {
+            fallAnimator.cancel();
         }
     }
 
@@ -139,7 +150,19 @@ public class CharacterMovementHelper {
     /// @summary update the vertical position of character when it hits the bottom
     public void updateGroundY() {
         if (gameAreaLayout != null && characterImageView != null) {
-            groundY = gameAreaLayout.getHeight() - characterImageView.getHeight() - 135f;
+            this.groundY = gameAreaLayout.getHeight();
         }
+    }
+
+    float tmp = 0;
+    public void landOnPlatform(float platformTopY) {
+        if(tmp == platformTopY) return;
+        tmp = platformTopY;
+        groundY = platformTopY - characterImageView.getHeight(); // Met à jour la position du sol
+        //isOnPlatform = true; // Est sur une plateforme
+        characterImageView.setY(platformTopY);
+        fallAnimator.cancel(); // Annule l'animation de chute
+        riseAnimator.cancel(); // Annule l'animation de saut
+
     }
 }

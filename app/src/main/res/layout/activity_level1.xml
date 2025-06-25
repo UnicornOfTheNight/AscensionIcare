@@ -8,8 +8,8 @@
     tools:context=".Level1Activity">
 
     <FrameLayout
-        android:layout_width="360dp"
-        android:layout_height="800dp"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
         android:layout_gravity="bottom"
         tools:ignore="MissingConstraints">
 
@@ -23,7 +23,7 @@
             android:translationY="-2400dp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:srcCompat="@drawable/background_level1" />
+            app:srcCompat="@drawable/bgniveau1" />
 
         <ImageView
             android:id="@+id/imageView_perso"
@@ -39,7 +39,7 @@
 
         <ImageView
             android:id="@+id/imageView_plateforme"
-            android:layout_width="300dp"
+            android:layout_width="80dp"
             android:layout_height="25dp"
             android:layout_gravity="bottom|center"
             android:contentDescription="@string/background_image_for_level_1"
