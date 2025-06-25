@@ -59,7 +59,7 @@ public class Level1Activity extends AppCompatActivity implements SensorEventList
                     if (characterMovementHelper != null && !characterMovementHelper.getIsJumping()) {
                         characterMovementHelper.performJump();
                     }
-                    jumpHandler.postDelayed(this, 0);
+                    jumpHandler.postDelayed(this, 1000);
                 }
             };
             jumpHandler.post(repetitiveJumpRunnable);

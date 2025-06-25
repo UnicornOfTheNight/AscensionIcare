@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".Level4Activity">
+
+    <!-- Image de fond qui remplit tout l'écran -->
+    <ImageView
+        android:id="@+id/imageView_background"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:contentDescription="@string/background_image_for_level_1"
+        android:scaleType="centerCrop"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:srcCompat="@drawable/background_level1" />
+
+    <!-- Plateforme positionnée en bas au centre -->
+    <ImageView
+        android:id="@+id/imageView_plateforme"
+        android:layout_width="300dp"
+        android:layout_height="25dp"
+        android:layout_marginBottom="20dp"
+        android:contentDescription="Plateforme"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:srcCompat="@drawable/plateforme_v1" />
+
+    <!-- Personnage positionné sur la plateforme -->
+    <ImageView
+        android:id="@+id/imageView_perso"
+        android:layout_width="118dp"
+        android:layout_height="117dp"
+        android:contentDescription="Personnage"
+        app:layout_constraintBottom_toTopOf="@+id/imageView_plateforme"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:srcCompat="@drawable/personnage" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

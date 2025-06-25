@@ -1,0 +1,181 @@
+package com.example.superjump;
+
+import android.content.Context;
+import android.content.Intent;
+import android.graphics.Rect;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
+import android.os.Bundle;
+import android.os.Handler;
+import android.view.View;
+import android.view.animation.LinearInterpolator;
+import android.widget.ImageView;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.constraintlayout.widget.ConstraintLayout;
+
+import java.util.List;
+import java.util.Random;
+
+public class Level4Activity extends AppCompatActivity implements SensorEventListener {
+
+    private ConstraintLayout gameLayout;
+    private ImageView player;
+    private Handler handler = new Handler();
+    private Random random = new Random();
+
+    private final int ENEMY_SIZE = 230;
+    private final int ENEMY_COUNT = 5;
+    private final int SPAWN_DELAY = 1500;
+
+    // === AJOUT POUR LES PLATEFORMES ===
+    private SensorManager sensorManager;
+    private Sensor accelerometer;
+    private PlatformCreationHelper platformCreator;
+    private List<ImageView> activePlatforms;
+    private CharacterMovementHelper characterMovementHelper;
+    private final Handler jumpHandler = new Handler();
+    private Runnable repetitiveJumpRunnable;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_level4);
+
+        gameLayout = findViewById(R.id.main);
+        player = findViewById(R.id.imageView_perso);
+
+        gameLayout.post(() -> {
+            // === INITIALISATION DES PLATEFORMES ===
+            characterMovementHelper = new CharacterMovementHelper(player, gameLayout);
+            characterMovementHelper.updateGroundY();
+
+            platformCreator = new PlatformCreationHelper(Level4Activity.this, gameLayout, player);
+            activePlatforms = platformCreator.creerPlateformes();
+
+            repetitiveJumpRunnable = new Runnable() {
+                @Override
+                public void run() {
+                    if (characterMovementHelper != null && !characterMovementHelper.getIsJumping()) {
+                        characterMovementHelper.performJump();
+                    }
+                    jumpHandler.postDelayed(this, 800);
+                }
+            };
+            jumpHandler.post(repetitiveJumpRunnable); // Saut immédiat au lancement
+
+            // Délai de 2 secondes avant de commencer à faire apparaître les ennemis
+            handler.postDelayed(() -> spawnEnemies(), 2000);
+        });
+
+        // === INITIALISATION DU CAPTEUR ===
+        sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+        if (sensorManager != null) {
+            accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // === ACTIVATION DU CAPTEUR ===
+        if (accelerometer != null) {
+            sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_GAME);
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        // === DÉSACTIVATION DU CAPTEUR ET ANIMATIONS ===
+        if (sensorManager != null) {
+            sensorManager.unregisterListener(this);
+        }
+
+        if (characterMovementHelper != null) {
+            characterMovementHelper.cancelAnimations();
+        }
+
+        if (jumpHandler != null && repetitiveJumpRunnable != null) {
+            jumpHandler.removeCallbacks(repetitiveJumpRunnable);
+        }
+    }
+
+    // === GESTION DU CAPTEUR POUR LE MOUVEMENT ===
+    @Override
+    public void onSensorChanged(SensorEvent event) {
+        if (characterMovementHelper != null) {
+            int rotation = getWindowManager().getDefaultDisplay().getRotation();
+            characterMovementHelper.handleSensorEvent(event, rotation);
+        }
+    }
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {
+    }
+
+    // === RESTE DU CODE INCHANGÉ ===
+    private void spawnEnemies() {
+        for (int i = 0; i < ENEMY_COUNT; i++) {
+            handler.postDelayed(this::createEnemy, i * SPAWN_DELAY);
+        }
+    }
+
+    private void createEnemy() {
+        ImageView enemy = new ImageView(this);
+        enemy.setImageResource(R.drawable.evil);
+        ConstraintLayout.LayoutParams params = new ConstraintLayout.LayoutParams(ENEMY_SIZE, ENEMY_SIZE);
+
+        int maxWidth = gameLayout.getWidth() - ENEMY_SIZE;
+        int randomX = random.nextInt(Math.max(maxWidth, 1));
+        enemy.setX(randomX);
+        enemy.setY(0);
+        enemy.setLayoutParams(params);
+
+        gameLayout.addView(enemy);
+
+        animateEnemy(enemy);
+    }
+
+    private void animateEnemy(ImageView enemy) {
+        int screenHeight = gameLayout.getHeight();
+        enemy.animate()
+                .translationY(screenHeight)
+                .setDuration(4000 + random.nextInt(2000))
+                .setInterpolator(new LinearInterpolator())
+                .withEndAction(() -> {
+                    gameLayout.removeView(enemy);
+                    createEnemy();
+                })
+                .start();
+
+        checkCollisionRepeatedly(enemy);
+    }
+
+    private void checkCollisionRepeatedly(ImageView enemy) {
+        Runnable check = new Runnable() {
+            @Override
+            public void run() {
+                if (enemy.getParent() == null) return;
+
+                if (checkCollision(player, enemy)) {
+                    Intent intent = new Intent(Level4Activity.this, GameOverActivity.class);
+                    startActivity(intent);
+                    finish();
+                } else {
+                    handler.postDelayed(this, 100);
+                }
+            }
+        };
+        handler.post(check);
+    }
+
+    private boolean checkCollision(View v1, View v2) {
+        Rect r1 = new Rect();
+        Rect r2 = new Rect();
+        v1.getHitRect(r1);
+        v2.getHitRect(r2);
+        return Rect.intersects(r1, r2);
+    }
+}

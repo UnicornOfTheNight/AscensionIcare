@@ -26,18 +26,6 @@
             app:srcCompat="@drawable/background_level1" />
 
         <ImageView
-            android:id="@+id/imageView_perso"
-            android:layout_width="100dp"
-            android:layout_height="100dp"
-            android:layout_gravity="bottom|center"
-            android:contentDescription="@string/character_image"
-            android:elevation="4dp"
-            android:translationY="-35dp"
-            android:visibility="visible"
-            app:layout_constraintBottom_toTopOf="@id/imageView_plateforme"
-            app:srcCompat="@drawable/personnage" />
-
-        <ImageView
             android:id="@+id/imageView_plateforme"
             android:layout_width="300dp"
             android:layout_height="25dp"
@@ -48,6 +36,30 @@
             android:visibility="visible"
             app:layout_constraintBottom_toBottomOf="@id/imageView_background"
             app:srcCompat="@drawable/plateforme_v1" />
+
+        <ImageView
+            android:id="@+id/enemy"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:layout_marginTop="32dp"
+            android:contentDescription="enemy"
+            android:src="@drawable/evil"
+            android:translationX="0dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <ImageView
+            android:id="@+id/imageView_perso"
+            android:layout_width="118dp"
+            android:layout_height="117dp"
+            android:layout_gravity="bottom|center"
+            android:contentDescription="@string/character_image"
+            android:elevation="4dp"
+            android:translationY="-35dp"
+            android:visibility="visible"
+            app:layout_constraintBottom_toTopOf="@id/imageView_plateforme"
+            app:srcCompat="@drawable/personnage" />
+
     </FrameLayout>
 
 
