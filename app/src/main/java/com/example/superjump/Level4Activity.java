@@ -1,5 +1,7 @@
 package com.example.superjump;
 
+import static java.security.AccessController.getContext;
+
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Rect;
@@ -9,6 +11,7 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.os.Handler;
+import android.util.DisplayMetrics;
 import android.view.View;
 import android.view.animation.LinearInterpolator;
 import android.widget.ImageView;
@@ -22,12 +25,20 @@ public class Level4Activity extends AppCompatActivity implements SensorEventList
 
     private ConstraintLayout gameLayout;
     private ImageView player;
+    private ImageView backgroundImage;
     private Handler handler = new Handler();
     private Random random = new Random();
 
-    private final int ENEMY_SIZE = 200;
+    private final int ENEMY_SIZE = 150;
     private final int ENEMY_COUNT = 5;
     private final int SPAWN_DELAY = 1500;
+
+    // === VARIABLES POUR L'ARRIÈRE-PLAN MOBILE ===
+    private Handler backgroundHandler = new Handler();
+    private Runnable backgroundRunnable;
+    private boolean isBackgroundMoving = false;
+    private float backgroundY = 0f;
+    private final float BACKGROUND_SPEED = 18f; // Vitesse de défilement
 
     // === AJOUT POUR LES PLATEFORMES ===
     private SensorManager sensorManager;
@@ -45,8 +56,12 @@ public class Level4Activity extends AppCompatActivity implements SensorEventList
 
         gameLayout = findViewById(R.id.main);
         player = findViewById(R.id.imageView_perso);
+        backgroundImage = findViewById(R.id.imageView_background);
 
         gameLayout.post(() -> {
+            // === DÉMARRAGE DE L'ARRIÈRE-PLAN MOBILE ===
+            startBackgroundMovement();
+
             // === INITIALISATION DES PLATEFORMES ===
             characterMovementHelper = new CharacterMovementHelper(player, gameLayout);
             characterMovementHelper.updateGroundY();
@@ -76,13 +91,104 @@ public class Level4Activity extends AppCompatActivity implements SensorEventList
         }
     }
 
+
+
+    // === MÉTHODES POUR L'ARRIÈRE-PLAN MOBILE ===
+    // Remplacez votre méthode startBackgroundMovement() par celle-ci :
+
+    private void startBackgroundMovement() {
+        if (!isBackgroundMoving) {
+            isBackgroundMoving = true;
+            backgroundRunnable = new Runnable() {
+                @Override
+                public void run() {
+                    if (isBackgroundMoving) {
+                        // Hauteur de l'écran et de l'image de fond
+                        int screenHeight = gameLayout.getHeight();
+                        int backgroundImageHeight = findViewById(R.id.imageView_background).getHeight(); // Selon votre XML
+
+                        // Calcul du déplacement maximum possible vers le bas
+                        // L'image peut descendre jusqu'à ce que son haut soit aligné avec le bas de l'écran
+                        float maxDownMovement = backgroundImageHeight - screenHeight;
+
+                        // Déplacer l'arrière-plan vers le BAS (valeur positive)
+                        backgroundY += BACKGROUND_SPEED;
+
+                        // Vérifier si on a atteint la fin du défilement
+                        if (backgroundY >= maxDownMovement) {
+                            // Arrêter le mouvement à la position finale exacte
+                            backgroundY = maxDownMovement;
+                            backgroundImage.setTranslationY(backgroundY);
+                            isBackgroundMoving = false;
+
+                            // Optionnel : vous pouvez ajouter une action quand le background s'arrête
+                            // Par exemple, déclencher un événement spécial ou passer au niveau suivant
+                            onBackgroundMovementFinished();
+                            return;
+                        }
+
+                        // Appliquer le mouvement
+                        backgroundImage.setTranslationY(backgroundY);
+
+                        // Continuer l'animation (16ms ≈ 60 FPS)
+                        backgroundHandler.postDelayed(this, 30);
+                    }
+                }
+            };
+            backgroundHandler.post(backgroundRunnable);
+        }
+    }
+
+    // Méthode appelée quand le background a fini de se déplacer
+    private void onBackgroundMovementFinished() {
+        // Vous pouvez ajouter ici ce que vous voulez faire quand le background s'arrête
+        // Par exemple :
+        // - Augmenter la difficulté du jeu
+        // - Déclencher un boss
+        // - Passer au niveau suivant
+        // - Afficher un message
+
+        System.out.println("Le background a atteint la fin !");
+
+        // Exemple : vous pourriez vouloir accélérer l'apparition des ennemis
+        // ou modifier d'autres paramètres du jeu
+    }
+
+    // Ajoutez aussi cette méthode pour réinitialiser le background si nécessaire
+    private void resetBackgroundPosition() {
+        backgroundY = 0f;
+        backgroundImage.setTranslationY(backgroundY);
+        isBackgroundMoving = false;
+    }
+
+    private void stopBackgroundMovement() {
+        isBackgroundMoving = false;
+        if (backgroundHandler != null && backgroundRunnable != null) {
+            backgroundHandler.removeCallbacks(backgroundRunnable);
+        }
+    }
+
+    private void pauseBackgroundMovement() {
+        isBackgroundMoving = false;
+        if (backgroundHandler != null && backgroundRunnable != null) {
+            backgroundHandler.removeCallbacks(backgroundRunnable);
+        }
+    }
+
+    private void resumeBackgroundMovement() {
+        if (!isBackgroundMoving) {
+            startBackgroundMovement();
+        }
+    }
+
     @Override
     protected void onResume() {
         super.onResume();
-        // === ACTIVATION DU CAPTEUR ===
+        // === ACTIVATION DU CAPTEUR ET REPRISE DE L'ARRIÈRE-PLAN ===
         if (accelerometer != null) {
             sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_GAME);
         }
+        resumeBackgroundMovement();
     }
 
     @Override
@@ -100,6 +206,16 @@ public class Level4Activity extends AppCompatActivity implements SensorEventList
         if (jumpHandler != null && repetitiveJumpRunnable != null) {
             jumpHandler.removeCallbacks(repetitiveJumpRunnable);
         }
+
+        // === PAUSE DE L'ARRIÈRE-PLAN ===
+        pauseBackgroundMovement();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        // === ARRÊT COMPLET DE L'ARRIÈRE-PLAN ===
+        stopBackgroundMovement();
     }
 
     // === GESTION DU CAPTEUR POUR LE MOUVEMENT ===
