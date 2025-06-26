@@ -2,6 +2,7 @@ package com.example.superjump;
 
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Rect;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -11,209 +12,86 @@ import android.os.Handler;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.View;
-import android.widget.Button;
+import android.view.animation.AlphaAnimation;
+import android.view.animation.LinearInterpolator;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.constraintlayout.widget.ConstraintLayout;
 
 import java.util.List;
-import java.util.Iterator;
+import java.util.Random;
 
 public class Level1Activity extends AppCompatActivity implements SensorEventListener {
-    private ImageView character;
-    private ImageView startPlatform;
+
+    private ConstraintLayout gameLayout;
+    private ImageView player;
+    private ImageView backgroundImage;
+    private FrameLayout backgroundFrame;
+    private TextView introTextView;
+    private Handler handler = new Handler();
+    private Random random = new Random();
+
+
+
+    // === VARIABLES POUR L'ARRIÈRE-PLAN MOBILE ===
+    private Handler backgroundHandler = new Handler();
+    private Runnable backgroundRunnable;
+    private boolean isBackgroundMoving = false;
+
+    private Handler platHandler = new Handler();
+    private Runnable platRunnable;
+    private boolean isPlatMoving = false;
+
+    private float backgroundY = 0f;
+    private final float BACKGROUND_SPEED = 18f; // Vitesse de défilement
+
+    // === AJOUT POUR LES PLATEFORMES ===
+    private SensorManager sensorManager;
+    private Sensor accelerometer;
     private PlatformCreationHelper platformCreator;
-    private List<ImageView> platforms;
+    private List<ImageView> activePlatforms;
+    private CharacterMovementHelper characterMovementHelper;
+    private final Handler jumpHandler = new Handler();
+    private Runnable repetitiveJumpRunnable;
 
-    // Éléments de pause
-    private Button pauseButton, resumeButton, quitButton;
-    private LinearLayout pauseMenu;
-    private TextView timerText;
-    private boolean isManuallyPaused = false;
+    // === VARIABLES POUR LE TEXTE D'INTRODUCTION ===
+    private boolean gameStarted = false;
 
-    // Variables pour le chronomètre
-    private Handler timerHandler;
-    private Runnable timerRunnable;
-    private long startTime;
-    private long pausedTime = 0;
-    private boolean isTimerRunning = false;
-
-    // Variables pour la physique
+    // === NOUVELLES VARIABLES POUR LA PHYSIQUE (comme Level1) ===
     private float velocityY = 0;
-    private final float GRAVITY = 3f;
+    private final float GRAVITY = 4f;
     private final float TERMINAL_VELOCITY = 300f;
     private boolean isOnGround = false;
     private boolean isJumping = false;
-
-    // Variables pour la position
     private float characterX, characterY;
-    private boolean firstJump = true;
+    private int screenWidth, screenHeight;
+    private final float JUMP_FORCE = -55f;
+    private long lastJumpTime = 0;
+    private final long JUMP_COOLDOWN = 100;
+    private ImageView startPlatform;
 
     // Handler pour la boucle de jeu
     private Handler gameHandler = new Handler();
     private Runnable gameRunnable;
 
-    // Dimensions de l'écran
-    private int screenWidth, screenHeight;
-
-    // Variables pour le gyroscope/accéléromètre
-    private SensorManager sensorManager;
-    private Sensor accelerometer;
+    // Variables pour le mouvement horizontal
     private float currentTilt = 0f;
-    private final float TILT_SENSITIVITY = 0.01f; // Sensibilité du mouvement
-    private final float MOVEMENT_SPEED = 1000f; // Vitesse de déplacement
-
-    // Variables pour les sauts automatiques
-    private boolean autoJumpEnabled = true;
-    private final float JUMP_FORCE = -65f;
-    private long lastJumpTime = 0;
-    private final long JUMP_COOLDOWN = 100; // Cooldown en millisecondes entre sauts
-
-    // Variables pour le système de défilement
-    private final float SCROLL_DISTANCE = 400f; // Distance de défilement en pixels
-    private boolean isScrolling = false;
-    private float scrollOffset = 0f; // Décalage total du défilement
+    private final float TILT_SENSITIVITY = 0.01f;
+    private final float MOVEMENT_SPEED = 200f;
+    private boolean firstJump = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_level1);
 
-        // Initialiser les éléments de pause
-        initializePauseElements();
+        // Initialiser les vues d'abord
+        initializeViews();
+        initializeScreenDimensions();
 
-        // Initialiser et démarrer le chronomètre
-        initTimer();
-        startTimer();
-
-        initializeGame();
-        initializeSensors();
-        startGameLoop();
-    }
-
-    private void initializePauseElements() {
-        pauseButton = findViewById(R.id.pauseButton);
-        resumeButton = findViewById(R.id.resumeButton);
-        quitButton = findViewById(R.id.quitButton);
-        pauseMenu = findViewById(R.id.pauseMenu);
-        timerText = findViewById(R.id.timerText);
-
-        pauseButton.setOnClickListener(v -> {
-            isManuallyPaused = true;
-            pauseTimer();
-            onPause(); // Appelle pause manuelle
-        });
-
-        resumeButton.setOnClickListener(v -> {
-            isPaused = false;
-            resumeTimer();
-            resumeGame();
-        });
-
-        quitButton.setOnClickListener(v -> {
-            isManuallyPaused = false;
-            stopTimer();
-            Intent intent = new Intent(Level1Activity.this, MainActivity.class);
-            intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-            startActivity(intent);
-            finish();
-        });
-    }
-
-    private void initTimer() {
-        timerHandler = new Handler();
-        timerRunnable = new Runnable() {
-            @Override
-            public void run() {
-                if (isTimerRunning) {
-                    long currentTime = System.currentTimeMillis();
-                    long elapsedTime = currentTime - startTime + pausedTime;
-                    updateTimerDisplay(elapsedTime);
-                    timerHandler.postDelayed(this, 10); // Mise à jour toutes les 10ms
-                }
-            }
-        };
-    }
-
-    private void startTimer() {
-        if (!isTimerRunning) {
-            startTime = System.currentTimeMillis();
-            isTimerRunning = true;
-            timerHandler.post(timerRunnable);
-        }
-    }
-
-    private void pauseTimer() {
-        if (isTimerRunning) {
-            isTimerRunning = false;
-            pausedTime += System.currentTimeMillis() - startTime;
-            timerHandler.removeCallbacks(timerRunnable);
-        }
-    }
-
-    private void resumeTimer() {
-        if (!isTimerRunning) {
-            startTime = System.currentTimeMillis();
-            isTimerRunning = true;
-            timerHandler.post(timerRunnable);
-        }
-    }
-
-    private void stopTimer() {
-        isTimerRunning = false;
-        if (timerHandler != null) {
-            timerHandler.removeCallbacks(timerRunnable);
-        }
-    }
-
-    private void updateTimerDisplay(long elapsedTime) {
-        int minutes = (int) (elapsedTime / 60000);
-        int seconds = (int) ((elapsedTime % 60000) / 1000);
-        int milliseconds = (int) ((elapsedTime % 1000) / 10);
-
-        String timeText = String.format("%02d:%02d:%02d", minutes, seconds, milliseconds);
-        timerText.setText(timeText);
-    }
-
-    private void resumeGame() {
-        isManuallyPaused = false;
-        pauseMenu.setVisibility(View.GONE);
-        pauseButton.setVisibility(View.VISIBLE);
-    }
-
-    private void initializeGame() {
-        // Récupérer les dimensions de l'écran
-        DisplayMetrics displayMetrics = new DisplayMetrics();
-        getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
-        screenWidth = displayMetrics.widthPixels;
-        screenHeight = displayMetrics.heightPixels;
-
-        // Initialiser le personnage et la plateforme de départ
-        character = findViewById(R.id.imageView_perso);
-        startPlatform = findViewById(R.id.imageView_plateforme);
-
-        // Attendre que les vues soient mesurées avant de positionner le personnage
-        character.post(() -> {
-            // Positionner le personnage sur la plateforme de départ
-            characterX = startPlatform.getX() + (startPlatform.getWidth() - character.getWidth()) / 2;
-            characterY = startPlatform.getY() - character.getHeight();
-
-            character.setX(characterX);
-            character.setY(characterY);
-
-            isOnGround = true; // Le personnage commence sur la plateforme
-
-            Log.d("Game", "Position initiale - Character: (" + characterX + ", " + characterY +
-                    "), Platform: (" + startPlatform.getX() + ", " + startPlatform.getY() + ")");
-        });
-
-        // Initialiser les plateformes après avoir positionné le personnage
-        platformCreator = new PlatformCreationHelper(Level1Activity.this, findViewById(R.id.main), character, startPlatform);
-        platforms = platformCreator.creerPlateformes();
-    }
-
-    private void initializeSensors() {
+        // === INITIALISATION DU CAPTEUR ===
         sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
 
@@ -222,31 +100,145 @@ public class Level1Activity extends AppCompatActivity implements SensorEventList
         } else {
             Log.w("Game", "Accéléromètre non disponible");
         }
+
+        // Attendre que le layout soit prêt avant d'afficher le texte
+        gameLayout.post(() -> {
+            showIntroText();
+        });
     }
 
-    @Override
-    public void onSensorChanged(SensorEvent event) {
-        if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
-            // Récupérer l'inclinaison sur l'axe X (gauche/droite)
-            currentTilt = event.values[0];
+    private void initializeViews() {
+        gameLayout = findViewById(R.id.main);
+        player = findViewById(R.id.imageView_perso);
+        backgroundImage = findViewById(R.id.imageView_background);
+        backgroundFrame = findViewById(R.id.backgroundFrameLayout);
+        introTextView = findViewById(R.id.introTextView);
 
-            // Appliquer un seuil pour éviter les mouvements involontaires
-            if (Math.abs(currentTilt) < 1.0f) {
-                currentTilt = 0;
-            }
+        // Vérifier que toutes les vues existent
+        if (gameLayout == null) {
+            throw new RuntimeException("gameLayout (R.id.main) not found in layout");
         }
+        if (player == null) {
+            throw new RuntimeException("player (R.id.imageView_perso) not found in layout");
+        }
+        if (backgroundImage == null) {
+            throw new RuntimeException("backgroundImage (R.id.imageView_background) not found in layout");
+        }
+        if (backgroundFrame == null) {
+            throw new RuntimeException("backgroundFrame (R.id.frame_background) not found in layout");
+        }
+        if (introTextView == null) {
+            throw new RuntimeException("introTextView (R.id.introTextView) not found in layout");
+        }
+        player.setY(player.getY() - 25);
     }
 
-    @Override
-    public void onAccuracyChanged(Sensor sensor, int accuracy) {
-        // Pas nécessaire pour ce cas d'usage
+    private void initializeScreenDimensions() {
+        DisplayMetrics displayMetrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+        screenWidth = displayMetrics.widthPixels;
+        screenHeight = displayMetrics.heightPixels;
+    }
+
+    private void showIntroText() {
+        // Rendre le texte visible
+        introTextView.setVisibility(View.VISIBLE);
+
+        // Animation d'apparition
+        AlphaAnimation fadeIn = new AlphaAnimation(0.0f, 1.0f);
+        fadeIn.setDuration(1000);
+        introTextView.startAnimation(fadeIn);
+
+        // Masquer le texte après 7 secondes et démarrer le jeu
+        handler.postDelayed(() -> {
+            // Animation de disparition
+            AlphaAnimation fadeOut = new AlphaAnimation(1.0f, 0.0f);
+            fadeOut.setDuration(1000);
+            fadeOut.setAnimationListener(new android.view.animation.Animation.AnimationListener() {
+                @Override
+                public void onAnimationStart(android.view.animation.Animation animation) {}
+
+                @Override
+                public void onAnimationEnd(android.view.animation.Animation animation) {
+                    introTextView.setVisibility(View.GONE);
+                    startGame();
+                }
+
+                @Override
+                public void onAnimationRepeat(android.view.animation.Animation animation) {}
+            });
+            introTextView.startAnimation(fadeOut);
+        }, 4000);
+    }
+
+    private void startGame() {
+        gameStarted = true;
+
+        // === DÉMARRAGE DE L'ARRIÈRE-PLAN MOBILE ===
+        startBackgroundMovement();
+
+        startPlatMovement();
+
+        // === INITIALISATION DES PLATEFORMES ET PHYSIQUE ===
+        initializeGamePhysics();
+
+        // Délai de 2 secondes avant de commencer à faire apparaître les ennemis
+
+    }
+
+    private void initializeGamePhysics() {
+        // Créer la plateforme de départ
+        startPlatform = createStartPlatform();
+
+        // Attendre que les vues soient mesurées avant de positionner le personnage
+        player.post(() -> {
+            // Positionner le personnage sur la plateforme de départ
+            characterX = startPlatform.getX() + (startPlatform.getWidth() - player.getWidth()) / 2;
+            characterY = startPlatform.getY() - player.getHeight();
+
+            player.setX(characterX);
+            player.setY(characterY);
+
+            isOnGround = true; // Le personnage commence sur la plateforme
+
+            Log.d("Level1", "Position initiale - Character: (" + characterX + ", " + characterY +
+                    "), Platform: (" + startPlatform.getX() + ", " + startPlatform.getY() + ")");
+        });
+
+        // Initialiser les plateformes après avoir positionné le personnage
+        platformCreator = new PlatformCreationHelper(Level1Activity.this, gameLayout, player, startPlatform);
+        activePlatforms = platformCreator.creerPlateformes();
+
+        // Démarrer la boucle de jeu
+        startGameLoop();
+    }
+
+    private ImageView createStartPlatform() {
+        // Créer une plateforme de départ
+        ImageView startPlatform = new ImageView(this);
+        startPlatform.setImageResource(R.drawable.plateforme_v1); // Assurez-vous que cette ressource existe
+
+        ConstraintLayout.LayoutParams params = new ConstraintLayout.LayoutParams(
+                400, // largeur
+                100  // hauteur
+        );
+
+        // Positionner la plateforme au bas de l'écran, centrée
+        startPlatform.setLayoutParams(params);
+        startPlatform.setX((screenWidth - 400) / 2f);
+        startPlatform.setY(screenHeight - 200);
+
+        gameLayout.addView(startPlatform);
+        return startPlatform;
     }
 
     private void startGameLoop() {
         gameRunnable = new Runnable() {
             @Override
             public void run() {
-                updateCharacter();
+                if (gameStarted) {
+                    updateCharacter();
+                }
                 gameHandler.postDelayed(this, 16); // ~60 FPS
             }
         };
@@ -276,8 +268,8 @@ public class Level1Activity extends AppCompatActivity implements SensorEventList
 
         // Appliquer la nouvelle position
         if(!firstJump){
-            character.setX(characterX);
-            character.setY(characterY);
+            player.setX(characterX);
+            player.setY(characterY);
         }
     }
 
@@ -289,18 +281,16 @@ public class Level1Activity extends AppCompatActivity implements SensorEventList
         // Vérifier les limites de l'écran
         if (characterX < 0) {
             characterX = 0;
-        } else if (characterX + character.getWidth() > screenWidth) {
-            characterX = screenWidth - character.getWidth();
+        } else if (characterX + player.getWidth() > screenWidth) {
+            characterX = screenWidth - player.getWidth();
         }
     }
 
     private void handleAutoJump() {
-        if (!autoJumpEnabled) return;
-
         long currentTime = System.currentTimeMillis();
 
         // Si le personnage vient d'atterrir et que le cooldown est passé
-        if (isOnGround && !isJumping && (currentTime - lastJumpTime) > JUMP_COOLDOWN && !isPaused) {
+        if (isOnGround && !isJumping && (currentTime - lastJumpTime) > JUMP_COOLDOWN) {
             performJump();
             lastJumpTime = currentTime;
         }
@@ -315,108 +305,47 @@ public class Level1Activity extends AppCompatActivity implements SensorEventList
     private void checkPlatformCollisions() {
         isOnGround = false;
 
-        for (ImageView platform : platforms) {
-            if (isCollidingWithPlatform(platform)) {
-                // Si le personnage tombe et touche le dessus de la plateforme
-                if (velocityY > 0 &&
-                        characterY + character.getHeight() >= platform.getY() &&
-                        characterY + character.getHeight() <= platform.getY() + platform.getHeight()) {
+        // Vérifier collision avec la plateforme de départ
+        if (isCollidingWithPlatform(startPlatform)) {
+            if (velocityY > 0 &&
+                    characterY + player.getHeight() >= startPlatform.getY() &&
+                    characterY + player.getHeight() <= startPlatform.getY() + startPlatform.getHeight()) {
 
-                    // Placer le personnage sur la plateforme
-                    characterY = platform.getY() - character.getHeight();
-                    velocityY = 0;
-                    isOnGround = true;
-                    isJumping = false;
-                    firstJump = false;
+                characterY = startPlatform.getY() - player.getHeight();
+                velocityY = 0;
+                isOnGround = true;
+                isJumping = false;
+                firstJump = false;
+                return;
+            }
+        }
 
-                    // Vérifier si la plateforme est dans la moitié supérieure de l'écran
-                    checkForScrollTrigger(platform);
-                    break;
+        // Vérifier collisions avec les autres plateformes
+        if (activePlatforms != null) {
+            for (ImageView platform : activePlatforms) {
+                if (isCollidingWithPlatform(platform)) {
+                    if (velocityY > 0 &&
+                            characterY + player.getHeight() >= platform.getY() &&
+                            characterY + player.getHeight() <= platform.getY() + platform.getHeight()) {
+
+                        characterY = platform.getY() - player.getHeight();
+                        velocityY = 0;
+                        isOnGround = true;
+                        isJumping = false;
+                        firstJump = false;
+                        break;
+                    }
                 }
             }
-        }
-    }
-
-    private void checkForScrollTrigger(ImageView platform) {
-        // Si la plateforme sur laquelle le personnage atterrit est dans la moitié supérieure de l'écran
-        if (platform.getY() < screenHeight / 2) {
-            Log.d("Scroll", "Déclenchement du défilement - Plateforme Y: " + platform.getY() + ", Moitié écran: " + (screenHeight / 2));
-            triggerScroll();
-        }
-    }
-
-    private void triggerScroll() {
-        if (isScrolling) return; // Éviter les défilements multiples
-
-        isScrolling = true;
-        scrollOffset += SCROLL_DISTANCE;
-
-        Log.d("Scroll", "Début du défilement - Offset: " + scrollOffset);
-
-        // Faire descendre toutes les plateformes existantes
-        for (ImageView platform : platforms) {
-            float newY = platform.getY() + SCROLL_DISTANCE;
-            platform.setY(newY);
-            Log.d("Scroll", "Plateforme déplacée vers Y: " + newY);
-        }
-
-        // Faire descendre le personnage
-        characterY += SCROLL_DISTANCE;
-        character.setY(characterY);
-        Log.d("Scroll", "Personnage déplacé vers Y: " + characterY);
-
-        // Supprimer les plateformes qui sont maintenant hors écran (en bas)
-        removePlatformsBelowScreen();
-
-        // Créer de nouvelles plateformes en haut
-        createNewPlatformsAbove();
-
-        isScrolling = false;
-        Log.d("Scroll", "Fin du défilement");
-    }
-
-    private void removePlatformsBelowScreen() {
-        Iterator<ImageView> iterator = platforms.iterator();
-        while (iterator.hasNext()) {
-            ImageView platform = iterator.next();
-            // Supprimer les plateformes qui sont trop loin en bas de l'écran
-            if (platform.getY() > screenHeight + 200) {
-                Log.d("Scroll", "Suppression plateforme Y: " + platform.getY());
-                ((LinearLayout) findViewById(R.id.main)).removeView(platform);
-                iterator.remove();
-            }
-        }
-    }
-
-    private void createNewPlatformsAbove() {
-        // Créer de nouvelles plateformes en utilisant le PlatformCreationHelper
-        // mais en modifiant temporairement la référence pour qu'elles soient créées en haut
-
-        // Trouver la plateforme la plus haute actuellement
-        ImageView highestPlatform = null;
-        float highestY = screenHeight;
-
-        for (ImageView platform : platforms) {
-            if (platform.getY() < highestY) {
-                highestY = platform.getY();
-                highestPlatform = platform;
-            }
-        }
-
-        if (highestPlatform != null) {
-            // Créer de nouvelles plateformes au-dessus de la plus haute plateforme existante
-            List<ImageView> newPlatforms = platformCreator.createPlatformsAbove(highestPlatform, 3);
-            platforms.addAll(newPlatforms);
-            Log.d("Scroll", "Créées " + newPlatforms.size() + " nouvelles plateformes");
         }
     }
 
     private boolean isCollidingWithPlatform(ImageView platform) {
         // Récupérer les dimensions et positions
         float charLeft = characterX;
-        float charRight = characterX + character.getWidth();
+        float charRight = characterX + player.getWidth();
         float charTop = characterY;
-        float charBottom = characterY + character.getHeight();
+        float charBottom = characterY + player.getHeight();
 
         float platLeft = platform.getX();
         float platRight = platform.getX() + platform.getWidth();
@@ -438,83 +367,247 @@ public class Level1Activity extends AppCompatActivity implements SensorEventList
     }
 
     private void handleFallIntoVoid() {
-        Log.d("Game", "Le personnage est tombé dans le vide !");
+        Log.d("Level1", "Le personnage est tombé dans le vide !");
         respawnCharacter();
     }
 
     private void respawnCharacter() {
         // Remettre le personnage sur la plateforme de départ
-        characterX = startPlatform.getX() + (startPlatform.getWidth() - character.getWidth()) / 2;
-        characterY = startPlatform.getY() - character.getHeight();
+        characterX = startPlatform.getX() + (startPlatform.getWidth() - player.getWidth()) / 2;
+        characterY = startPlatform.getY() - player.getHeight();
         velocityY = 0;
-        isOnGround = true; // Il respawn sur la plateforme
+        isOnGround = true;
         isJumping = false;
-        lastJumpTime = 0; // Reset du timer de saut
+        lastJumpTime = 0;
 
         // Appliquer immédiatement la position
-        character.setX(characterX);
-        character.setY(characterY);
+        player.setX(characterX);
+        player.setY(characterY);
     }
 
-    // Méthodes pour ajuster les paramètres en temps réel
-    public void setTiltSensitivity(float sensitivity) {
-        // Vous pouvez appeler cette méthode pour ajuster la sensibilité
-        // TILT_SENSITIVITY = sensitivity; (rendre la variable non-final)
+    private void startBackgroundMovement() {
+        if (!isBackgroundMoving && backgroundImage != null) {
+            isBackgroundMoving = true;
+            backgroundRunnable = new Runnable() {
+                @Override
+                public void run() {
+                    if (isBackgroundMoving) {
+                        // Hauteur de l'écran et de l'image de fond
+                        int screenHeight = gameLayout.getHeight();
+                        int backgroundImageHeight = backgroundImage.getHeight();
+
+                        // Si la hauteur n'est pas encore disponible, utiliser la hauteur de l'écran
+                        if (backgroundImageHeight == 0) {
+                            DisplayMetrics displayMetrics = new DisplayMetrics();
+                            getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+                            backgroundImageHeight = displayMetrics.heightPixels * 2; // Estimation
+                        }
+
+                        // Calcul du déplacement maximum possible vers le bas
+                        float maxDownMovement = backgroundImageHeight - screenHeight;
+
+                        // Déplacer l'arrière-plan vers le BAS
+                        backgroundY += BACKGROUND_SPEED;
+
+                        // Vérifier si on a atteint la fin du défilement
+                        if (backgroundY >= maxDownMovement) {
+                            backgroundY = maxDownMovement;
+                            backgroundImage.setTranslationY(backgroundY);
+                            isBackgroundMoving = false;
+                            onBackgroundMovementFinished();
+                            return;
+                        }
+
+                        // Appliquer le mouvement
+                        backgroundImage.setTranslationY(backgroundY);
+
+                        // Continuer l'animation
+                        backgroundHandler.postDelayed(this, 30);
+                    }
+                }
+            };
+            backgroundHandler.post(backgroundRunnable);
+        }
     }
 
-    public void setAutoJumpEnabled(boolean enabled) {
-        autoJumpEnabled = enabled;
+    private void startPlatMovement() {
+        if (!isPlatMoving && backgroundFrame != null) {
+            isPlatMoving = true;
+            platRunnable = new Runnable() {
+                @Override
+                public void run() {
+                    if (isPlatMoving) {
+                        // Hauteur de l'écran et de l'image de fond
+                        int screenHeight = gameLayout.getHeight();
+                        int platImageHeight = backgroundFrame.getHeight();
+
+                        // Si la hauteur n'est pas encore disponible, utiliser la hauteur de l'écran
+                        if (platImageHeight == 0) {
+                            DisplayMetrics displayMetrics = new DisplayMetrics();
+                            getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+                            platImageHeight = displayMetrics.heightPixels * 2; // Estimation
+                        }
+
+                        // Calcul du déplacement maximum possible vers le bas
+                        float maxDownMovement = platImageHeight - screenHeight;
+
+                        // Déplacer l'arrière-plan vers le BAS
+                        backgroundY += BACKGROUND_SPEED;
+
+                        // Vérifier si on a atteint la fin du défilement
+                        if (backgroundY >= maxDownMovement) {
+                            backgroundY = maxDownMovement;
+                            backgroundFrame.setTranslationY(backgroundY);
+                            isPlatMoving = false;
+                            onPlatMovementFinished();
+                            return;
+                        }
+
+                        // Appliquer le mouvement
+                        backgroundFrame.setTranslationY(backgroundY);
+
+                        // Continuer l'animation
+                        platHandler.postDelayed(this, 30);
+                    }
+                }
+            };
+            platHandler.post(platRunnable);
+        }
     }
 
-    public void setJumpCooldown(long cooldown) {
-        // JUMP_COOLDOWN = cooldown; (rendre la variable non-final)
+    private void onBackgroundMovementFinished() {
+        System.out.println("Le background a atteint la fin !");
+    }
+
+    private void onPlatMovementFinished() {
+        System.out.println("La plateforme a atteint la fin !");
+    }
+
+    private void resetBackgroundPosition() {
+        backgroundY = 0f;
+        if (backgroundImage != null) {
+            backgroundImage.setTranslationY(backgroundY);
+        }
+        isBackgroundMoving = false;
+    }
+    private void resetPlatPosition() {
+        backgroundY = 0f;
+        if (backgroundFrame != null) {
+            backgroundFrame.setTranslationY(backgroundY);
+        }
+        isPlatMoving = false;
+    }
+
+    private void stopBackgroundMovement() {
+        isBackgroundMoving = false;
+        if (backgroundHandler != null && backgroundRunnable != null) {
+            backgroundHandler.removeCallbacks(backgroundRunnable);
+        }
+    }
+
+    private void stopPlatMovement() {
+        isPlatMoving = false;
+        if (platHandler != null && platRunnable != null) {
+            platHandler.removeCallbacks(platRunnable);
+        }
+    }
+
+    private void pauseBackgroundMovement() {
+        isBackgroundMoving = false;
+        if (backgroundHandler != null && backgroundRunnable != null) {
+            backgroundHandler.removeCallbacks(backgroundRunnable);
+        }
+    }
+    private void pausePlatMovement() {
+        isPlatMoving = false;
+        if (platHandler != null && platRunnable != null) {
+            platHandler.removeCallbacks(platRunnable);
+        }
+    }
+
+    private void resumeBackgroundMovement() {
+        if (!isBackgroundMoving && gameStarted) {
+            startBackgroundMovement();
+        }
+    }
+
+    private void resumePlatMovement() {
+        if (!isPlatMoving && gameStarted) {
+            startPlatMovement();
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // === ACTIVATION DU CAPTEUR ET REPRISE DE L'ARRIÈRE-PLAN ===
+        if (accelerometer != null && gameStarted && sensorManager != null) {
+            sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_GAME);
+        }
+        resumeBackgroundMovement();
+        resumePlatMovement();
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        if (isManuallyPaused) {
-            pauseMenu.setVisibility(View.VISIBLE);
-            pauseMenu.setElevation(6);
-            pauseButton.setVisibility(View.GONE);
-            isPaused = true;
-        } else {
-            // Pause automatique (changement d'activité)
-            pauseTimer();
+        // === DÉSACTIVATION DU CAPTEUR ET ANIMATIONS ===
+        if (sensorManager != null) {
+            sensorManager.unregisterListener(this);
         }
-        sensorManager.unregisterListener(this);
-    }
 
-    boolean isPaused = false;
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        if (!isManuallyPaused) {
-            pauseMenu.setVisibility(View.GONE);
-            pauseButton.setVisibility(View.VISIBLE);
-            resumeTimer();
-            Log.d("AAA", "test");
-        }
-        if (accelerometer != null) {
-            sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_GAME);
-        }
+        // === PAUSE DE L'ARRIÈRE-PLAN ===
+        pauseBackgroundMovement();
+        pausePlatMovement();
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        stopTimer();
-        // Arrêter la boucle de jeu
+        // === ARRÊT COMPLET DE L'ARRIÈRE-PLAN ===
+        stopBackgroundMovement();
+        stopPlatMovement();
+
+        // Nettoyer tous les handlers
+        if (handler != null) {
+            handler.removeCallbacksAndMessages(null);
+        }
+        if (jumpHandler != null) {
+            jumpHandler.removeCallbacksAndMessages(null);
+        }
+        if (backgroundHandler != null) {
+            backgroundHandler.removeCallbacksAndMessages(null);
+        }
         if (gameHandler != null && gameRunnable != null) {
             gameHandler.removeCallbacks(gameRunnable);
         }
-        // Désinscrire les sensors
-        sensorManager.unregisterListener(this);
     }
 
-    // Getters utiles
-    public boolean isAutoJumpEnabled() { return autoJumpEnabled; }
-    public float getCurrentTilt() { return currentTilt; }
-    public boolean isCharacterOnGround() { return isOnGround; }
+    // === GESTION DU CAPTEUR POUR LE MOUVEMENT ===
+    @Override
+    public void onSensorChanged(SensorEvent event) {
+        if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
+            // Récupérer l'inclinaison sur l'axe X (gauche/droite)
+            currentTilt = event.values[0];
+
+            // Appliquer un seuil pour éviter les mouvements involontaires
+            if (Math.abs(currentTilt) < 1.0f) {
+                currentTilt = 0;
+            }
+        }
+    }
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {
+        // Pas d'implémentation nécessaire
+    }
+    private boolean checkCollision(View v1, View v2) {
+        if (v1 == null || v2 == null) return false;
+
+        Rect r1 = new Rect();
+        Rect r2 = new Rect();
+        v1.getHitRect(r1);
+        v2.getHitRect(r2);
+        return Rect.intersects(r1, r2);
+    }
 }
