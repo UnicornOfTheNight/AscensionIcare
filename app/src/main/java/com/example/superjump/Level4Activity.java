@@ -13,8 +13,10 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.util.DisplayMetrics;
 import android.view.View;
+import android.view.animation.AlphaAnimation;
 import android.view.animation.LinearInterpolator;
 import android.widget.ImageView;
+import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
 
@@ -26,6 +28,7 @@ public class Level4Activity extends AppCompatActivity implements SensorEventList
     private ConstraintLayout gameLayout;
     private ImageView player;
     private ImageView backgroundImage;
+    private TextView introTextView;
     private Handler handler = new Handler();
     private Random random = new Random();
 
@@ -49,6 +52,9 @@ public class Level4Activity extends AppCompatActivity implements SensorEventList
     private final Handler jumpHandler = new Handler();
     private Runnable repetitiveJumpRunnable;
 
+    // === VARIABLES POUR LE TEXTE D'INTRODUCTION ===
+    private boolean gameStarted = false;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -57,31 +63,11 @@ public class Level4Activity extends AppCompatActivity implements SensorEventList
         gameLayout = findViewById(R.id.main);
         player = findViewById(R.id.imageView_perso);
         backgroundImage = findViewById(R.id.imageView_background);
+        introTextView = findViewById(R.id.introTextView);
 
         gameLayout.post(() -> {
-            // === DÉMARRAGE DE L'ARRIÈRE-PLAN MOBILE ===
-            startBackgroundMovement();
-
-            // === INITIALISATION DES PLATEFORMES ===
-            characterMovementHelper = new CharacterMovementHelper(player, gameLayout);
-            characterMovementHelper.updateGroundY();
-
-            platformCreator = new PlatformCreationHelper(Level4Activity.this, gameLayout, player);
-            activePlatforms = platformCreator.creerPlateformes();
-
-            repetitiveJumpRunnable = new Runnable() {
-                @Override
-                public void run() {
-                    if (characterMovementHelper != null && !characterMovementHelper.getIsJumping()) {
-                        characterMovementHelper.performJump();
-                    }
-                    jumpHandler.postDelayed(this, 800);
-                }
-            };
-            jumpHandler.post(repetitiveJumpRunnable); // Saut immédiat au lancement
-
-            // Délai de 2 secondes avant de commencer à faire apparaître les ennemis
-            handler.postDelayed(() -> spawnEnemies(), 2000);
+            // === AFFICHAGE DU TEXTE D'INTRODUCTION ===
+            showIntroText();
         });
 
         // === INITIALISATION DU CAPTEUR ===
@@ -91,7 +77,64 @@ public class Level4Activity extends AppCompatActivity implements SensorEventList
         }
     }
 
+    private void showIntroText() {
+        // Rendre le texte visible
+        introTextView.setVisibility(View.VISIBLE);
 
+        // Animation d'apparition
+        AlphaAnimation fadeIn = new AlphaAnimation(0.0f, 1.0f);
+        fadeIn.setDuration(1000);
+        introTextView.startAnimation(fadeIn);
+
+        // Masquer le texte après 7 secondes et démarrer le jeu
+        handler.postDelayed(() -> {
+            // Animation de disparition
+            AlphaAnimation fadeOut = new AlphaAnimation(1.0f, 0.0f);
+            fadeOut.setDuration(1000);
+            fadeOut.setAnimationListener(new android.view.animation.Animation.AnimationListener() {
+                @Override
+                public void onAnimationStart(android.view.animation.Animation animation) {}
+
+                @Override
+                public void onAnimationEnd(android.view.animation.Animation animation) {
+                    introTextView.setVisibility(View.GONE);
+                    startGame();
+                }
+
+                @Override
+                public void onAnimationRepeat(android.view.animation.Animation animation) {}
+            });
+            introTextView.startAnimation(fadeOut);
+        }, 7000);
+    }
+
+    private void startGame() {
+        gameStarted = true;
+
+        // === DÉMARRAGE DE L'ARRIÈRE-PLAN MOBILE ===
+        startBackgroundMovement();
+
+        // === INITIALISATION DES PLATEFORMES ===
+        characterMovementHelper = new CharacterMovementHelper(player, gameLayout);
+        characterMovementHelper.updateGroundY();
+
+        platformCreator = new PlatformCreationHelper(Level4Activity.this, gameLayout, player);
+        activePlatforms = platformCreator.creerPlateformes();
+
+        repetitiveJumpRunnable = new Runnable() {
+            @Override
+            public void run() {
+                if (characterMovementHelper != null && !characterMovementHelper.getIsJumping()) {
+                    characterMovementHelper.performJump();
+                }
+                jumpHandler.postDelayed(this, 800);
+            }
+        };
+        jumpHandler.post(repetitiveJumpRunnable); // Saut immédiat au lancement
+
+        // Délai de 2 secondes avant de commencer à faire apparaître les ennemis
+        handler.postDelayed(() -> spawnEnemies(), 2000);
+    }
 
     // === MÉTHODES POUR L'ARRIÈRE-PLAN MOBILE ===
     // Remplacez votre méthode startBackgroundMovement() par celle-ci :
@@ -176,7 +219,7 @@ public class Level4Activity extends AppCompatActivity implements SensorEventList
     }
 
     private void resumeBackgroundMovement() {
-        if (!isBackgroundMoving) {
+        if (!isBackgroundMoving && gameStarted) {
             startBackgroundMovement();
         }
     }
@@ -185,7 +228,7 @@ public class Level4Activity extends AppCompatActivity implements SensorEventList
     protected void onResume() {
         super.onResume();
         // === ACTIVATION DU CAPTEUR ET REPRISE DE L'ARRIÈRE-PLAN ===
-        if (accelerometer != null) {
+        if (accelerometer != null && gameStarted) {
             sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_GAME);
         }
         resumeBackgroundMovement();
@@ -221,7 +264,7 @@ public class Level4Activity extends AppCompatActivity implements SensorEventList
     // === GESTION DU CAPTEUR POUR LE MOUVEMENT ===
     @Override
     public void onSensorChanged(SensorEvent event) {
-        if (characterMovementHelper != null) {
+        if (characterMovementHelper != null && gameStarted) {
             int rotation = getWindowManager().getDefaultDisplay().getRotation();
             characterMovementHelper.handleSensorEvent(event, rotation);
         }

@@ -45,4 +45,25 @@
         app:layout_constraintStart_toStartOf="parent"
         app:srcCompat="@drawable/personnage" />
 
+    <!-- Texte d'introduction -->
+    <TextView
+        android:id="@+id/introTextView"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="24dp"
+        android:layout_marginEnd="24dp"
+        android:background="#AA000000"
+        android:fontFamily="@font/octal"
+        android:gravity="center"
+        android:padding="24dp"
+        android:text="Icarus arrive enfin au soleil en passant parmi les étoiles et les planètes\n\nDes méchants\nJuste à arriver en haut du niveau pour gagner - chronométré\n\n*Icare touche presque au but. Il s'élève au-delà des cieux, traversant constellations et planètes dans un dernier souffle d'espoir.*\n\n*Mais le ciel n'est pas vide… Des entités hostiles se dressent entre lui et la lumière.*\n\n***Frôle les étoiles, échappe aux dangers, et atteins enfin le soleil pour remporter cette ultime ascension.** "
+        android:textColor="#FFFFFF"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>
