@@ -1,5 +1,7 @@
 package com.example.superjump;
 
+import static android.view.View.GONE;
+
 import android.content.Context;
 import android.graphics.Rect;
 import android.hardware.Sensor;
@@ -215,11 +217,19 @@ public class Level1Activity extends AppCompatActivity implements SensorEventList
                     isOnGround = true;
                     isJumping = false;
                     firstJump = false;
+
+
                     break;
                 }
             }
         }
     }
+
+    /**
+     * Programme la disparition d'une plateforme après un délai aléatoire
+     */
+
+
 
     private boolean isCollidingWithPlatform(ImageView platform) {
         // Récupérer les dimensions et positions

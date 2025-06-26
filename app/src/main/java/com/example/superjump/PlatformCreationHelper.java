@@ -2,7 +2,6 @@ package com.example.superjump;
 
 import android.content.Context;
 import android.graphics.Rect;
-import android.graphics.drawable.Drawable;
 import android.os.Handler;
 import android.util.Log;
 import android.widget.ImageView;
@@ -10,8 +9,6 @@ import androidx.constraintlayout.widget.ConstraintLayout;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import java.util.Timer;
-import java.util.TimerTask;
 
 public class PlatformCreationHelper {
     private Context context;
@@ -30,13 +27,13 @@ public class PlatformCreationHelper {
     private static final int ESPACEMENT_VERTICAL_MIN_DP = 80;
 
     // Nouvelles constantes pour les plateformes qui disparaissent
-    private static final int PLATFORM_DISAPPEAR_PROBABILITY = 33; // 33% de chance (1 sur 3)
-    private static final long PLATFORM_DISAPPEAR_DELAY_MIN = 2000; // 2 secondes minimum
-    private static final long PLATFORM_DISAPPEAR_DELAY_MAX = 5000; // 5 secondes maximum
-    private static final long PLATFORM_WARNING_TIME = 1000; // 1 seconde d'avertissement avant disparition
+    private static final int PLATFORM_DISAPPEAR_PROBABILITY = 50; // 50% de chance (1 sur 2)
+    private static final long PLATFORM_DISAPPEAR_DELAY = 2000; // 2 secondes après avoir atterri
+    private static final long PLATFORM_WARNING_TIME = 500; // 0.5 seconde d'avertissement avant disparition
 
     private List<ImageView> existingPlatforms;
     private List<Boolean> platformDisappearFlags; // Track quelles plateformes peuvent disparaître
+    private List<Boolean> platformActivated; // Track quelles plateformes ont été activées par le joueur
     private Random random;
     private Handler disappearHandler;
 
@@ -46,10 +43,12 @@ public class PlatformCreationHelper {
         this.characterImageView = characterImageView;
         this.existingPlatforms = new ArrayList<>();
         this.platformDisappearFlags = new ArrayList<>();
+        this.platformActivated = new ArrayList<>();
         this.random = new Random();
         this.disappearHandler = new Handler();
         this.existingPlatforms.add(startPlatform);
         this.platformDisappearFlags.add(false); // La plateforme de départ ne disparaît jamais
+        this.platformActivated.add(false); // La plateforme de départ n'est pas activée
     }
 
     public List<ImageView> creerPlateformes() {
@@ -155,75 +154,63 @@ public class PlatformCreationHelper {
                 platformImageView.setX(randomX);
                 platformImageView.setY(randomY);
                 Log.d("landOnPlatform", "position " + randomY);
-
-
-                // NOUVEAU : Déterminer si cette plateforme peut disparaître (1 chance sur 3)
-                boolean canDisappear = (i > 0) && (random.nextInt(100) < PLATFORM_DISAPPEAR_PROBABILITY);
-                platformDisappearFlags.add(canDisappear);
-
-                // Si la plateforme peut disparaître, programmer sa disparition
-                if (i == 2) {
-                    i++;
-                    platformImageView.setImageResource(R.drawable.plateforme2);
-                    TimerTask task = new TimerTask() {
-                        public void run() {
-                            platformImageView.setImageResource(R.drawable.plateforme3);
-                        }
-                    };
-                    Timer timer = new Timer("Timer");
-
-                    long delay = 1000L;
-                    timer.schedule(task, delay);
-                    //schedulePlatformDisappearance(platformImageView, existingPlatforms.size() - 1);
-                }else{
-                    platformImageView.setImageResource(R.drawable.plateforme1);
-
-                }
-
                 existingPlatforms.add(platformImageView);
                 gameAreaLayout.addView(platformImageView);
+
+                // Déterminer si cette plateforme peut disparaître
+                boolean canDisappear = (i > 0) && (random.nextInt(100) < PLATFORM_DISAPPEAR_PROBABILITY);
+                platformDisappearFlags.add(canDisappear);
+                platformActivated.add(false); // Pas encore activée par le joueur
+                if(canDisappear) platformImageView.setImageResource(R.drawable.plateforme2);
+                Log.d("PlatformCreation", "Plateforme " + i + " créée - Peut disparaître: " + canDisappear);
             }
         }
         return existingPlatforms;
     }
-    int i = 2;
 
     /**
-     * Programme la disparition d'une plateforme après un délai aléatoire
+     * NOUVELLE MÉTHODE : À appeler depuis Level2Activity quand le joueur atterrit sur une plateforme
+     */
+    public void onPlayerLandedOnPlatform(ImageView platform) {
+        int platformIndex = existingPlatforms.indexOf(platform);
+
+        if (platformIndex != -1 && platformIndex < platformDisappearFlags.size()) {
+            // Vérifier si cette plateforme peut disparaître et n'a pas encore été activée
+            if (platformDisappearFlags.get(platformIndex) && !platformActivated.get(platformIndex)) {
+                platformActivated.set(platformIndex, true);
+                Log.d("PlatformActivation", "Joueur atterri sur plateforme " + platformIndex + " - Démarrage du timer de disparition");
+                schedulePlatformDisappearance(platform, platformIndex);
+            }
+        }
+    }
+
+    /**
+     * Programme la disparition d'une plateforme après que le joueur ait atterri dessus
      */
     private void schedulePlatformDisappearance(ImageView platform, int platformIndex) {
-        // Délai aléatoire entre min et max
-        long delay = PLATFORM_DISAPPEAR_DELAY_MIN +
-                random.nextInt((int)(PLATFORM_DISAPPEAR_DELAY_MAX - PLATFORM_DISAPPEAR_DELAY_MIN));
-
-        // Programmer l'avertissement (clignotement)
+        // Programmer l'avertissement (clignotement) avant disparition
         disappearHandler.postDelayed(() -> {
             if (platform.getParent() != null) { // Vérifier que la plateforme existe encore
                 startPlatformWarning(platform, platformIndex);
             }
-        }, delay - PLATFORM_WARNING_TIME);
+        }, 250);
     }
 
     /**
      * Fait clignoter la plateforme pour avertir qu'elle va disparaître
      */
     private void startPlatformWarning(ImageView platform, int platformIndex) {
-        // Faire clignoter la plateforme 5 fois
-        final int[] blinkCount = {0};
-        final Runnable blinkRunnable = new Runnable() {
-            @Override
-            public void run() {
-                if (platform.getParent() != null && blinkCount[0] < 10) { // 10 = 5 clignotements
-                    platform.setAlpha(blinkCount[0] % 2 == 0 ? 0.3f : 1.0f);
-                    blinkCount[0]++;
-                    disappearHandler.postDelayed(this, 100); // Clignoter toutes les 100ms
-                } else if (platform.getParent() != null) {
-                    // Faire disparaître la plateforme après le clignotement
-                    makePlatformDisappear(platform, platformIndex);
-                }
+        Log.d("PlatformWarning", "Début du clignotement pour la plateforme " + platformIndex);
+
+        // Changer la couleur/texture de la plateforme pour indiquer qu'elle va disparaître
+        platform.setImageResource(R.drawable.plateforme3);
+
+        // Programmer la disparition finale
+        disappearHandler.postDelayed(() -> {
+            if (platform.getParent() != null) {
+                makePlatformDisappear(platform, platformIndex);
             }
-        };
-        disappearHandler.post(blinkRunnable);
+        }, 250);
     }
 
     /**
@@ -232,13 +219,6 @@ public class PlatformCreationHelper {
     private void makePlatformDisappear(ImageView platform, int platformIndex) {
         if (platform.getParent() != null) {
             gameAreaLayout.removeView(platform);
-
-            // Optionnel : marquer la plateforme comme disparue dans la liste
-            // (garder l'index pour éviter les décalages)
-            if (platformIndex < platformDisappearFlags.size()) {
-                platformDisappearFlags.set(platformIndex, false); // Marquer comme disparue
-            }
-
             Log.d("PlatformDisappear", "Plateforme disparue à l'index " + platformIndex);
         }
     }
@@ -269,7 +249,7 @@ public class PlatformCreationHelper {
         // Vous pouvez rendre PLATFORM_DISAPPEAR_PROBABILITY non-final pour permettre la modification
     }
 
-    public void setPlatformDisappearDelayRange(long minDelay, long maxDelay) {
-        // Vous pouvez rendre les constantes de délai non-finales pour permettre la modification
+    public void setPlatformDisappearDelay(long delay) {
+        // Vous pouvez rendre PLATFORM_DISAPPEAR_DELAY non-final pour permettre la modification
     }
 }

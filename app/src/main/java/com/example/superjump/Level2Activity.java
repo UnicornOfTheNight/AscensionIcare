@@ -56,6 +56,9 @@ public class Level2Activity extends AppCompatActivity implements SensorEventList
     private long lastJumpTime = 0;
     private final long JUMP_COOLDOWN = 100; // Cooldown en millisecondes entre sauts
 
+    // NOUVEAU : Variable pour tracker la dernière plateforme sur laquelle le joueur a atterri
+    private ImageView lastLandedPlatform = null;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -87,6 +90,7 @@ public class Level2Activity extends AppCompatActivity implements SensorEventList
             character.setY(characterY);
 
             isOnGround = true; // Le personnage commence sur la plateforme
+            lastLandedPlatform = startPlatform; // NOUVEAU : Définir la plateforme de départ comme première plateforme
 
             Log.d("Game", "Position initiale - Character: (" + characterX + ", " + characterY +
                     "), Platform: (" + startPlatform.getX() + ", " + startPlatform.getY() + ")");
@@ -203,6 +207,11 @@ public class Level2Activity extends AppCompatActivity implements SensorEventList
         isOnGround = false;
 
         for (ImageView platform : platforms) {
+            // NOUVEAU : Vérifier si la plateforme existe encore (n'a pas disparu)
+            if (platform.getParent() == null) {
+                continue; // Ignorer les plateformes qui ont disparu
+            }
+
             if (isCollidingWithPlatform(platform)) {
                 // Si le personnage tombe et touche le dessus de la plateforme
                 if (velocityY > 0 &&
@@ -215,6 +224,14 @@ public class Level2Activity extends AppCompatActivity implements SensorEventList
                     isOnGround = true;
                     isJumping = false;
                     firstJump = false;
+
+                    // NOUVEAU : Vérifier si c'est une nouvelle plateforme
+                    if (lastLandedPlatform != platform) {
+                        lastLandedPlatform = platform;
+                        // Notifier le PlatformCreationHelper que le joueur a atterri sur cette plateforme
+                        platformCreator.onPlayerLandedOnPlatform(platform);
+                        Log.d("Game", "Joueur atterri sur une nouvelle plateforme - Timer de disparition démarré");
+                    }
                     break;
                 }
             }
@@ -260,6 +277,7 @@ public class Level2Activity extends AppCompatActivity implements SensorEventList
         isOnGround = true; // Il respawn sur la plateforme
         isJumping = false;
         lastJumpTime = 0; // Reset du timer de saut
+        lastLandedPlatform = startPlatform; // NOUVEAU : Reset de la dernière plateforme
 
         // Appliquer immédiatement la position
         character.setX(characterX);
@@ -305,6 +323,11 @@ public class Level2Activity extends AppCompatActivity implements SensorEventList
         }
         // Désinscrire les sensors
         sensorManager.unregisterListener(this);
+
+        // NOUVEAU : Nettoyer les handlers du PlatformCreationHelper
+        if (platformCreator != null) {
+            platformCreator.cleanup();
+        }
     }
 
     // Getters utiles
