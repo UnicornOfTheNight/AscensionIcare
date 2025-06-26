@@ -1,7 +1,5 @@
 package com.example.superjump;
 
-import static java.security.AccessController.getContext;
-
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Rect;
@@ -12,6 +10,7 @@ import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.view.View;
 import android.view.animation.AlphaAnimation;
 import android.view.animation.LinearInterpolator;
@@ -55,26 +54,76 @@ public class Level4Activity extends AppCompatActivity implements SensorEventList
     // === VARIABLES POUR LE TEXTE D'INTRODUCTION ===
     private boolean gameStarted = false;
 
+    // === NOUVELLES VARIABLES POUR LA PHYSIQUE (comme Level1) ===
+    private float velocityY = 0;
+    private final float GRAVITY = 3f;
+    private final float TERMINAL_VELOCITY = 300f;
+    private boolean isOnGround = false;
+    private boolean isJumping = false;
+    private float characterX, characterY;
+    private int screenWidth, screenHeight;
+    private final float JUMP_FORCE = -65f;
+    private long lastJumpTime = 0;
+    private final long JUMP_COOLDOWN = 100;
+    private ImageView startPlatform;
+
+    // Handler pour la boucle de jeu
+    private Handler gameHandler = new Handler();
+    private Runnable gameRunnable;
+
+    // Variables pour le mouvement horizontal
+    private float currentTilt = 0f;
+    private final float TILT_SENSITIVITY = 0.01f;
+    private final float MOVEMENT_SPEED = 1000f;
+    private boolean firstJump = true;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_level4);
 
-        gameLayout = findViewById(R.id.main);
-        player = findViewById(R.id.imageView_perso);
-        backgroundImage = findViewById(R.id.imageView_background);
-        introTextView = findViewById(R.id.introTextView);
-
-        gameLayout.post(() -> {
-            // === AFFICHAGE DU TEXTE D'INTRODUCTION ===
-            showIntroText();
-        });
+        // Initialiser les vues d'abord
+        initializeViews();
+        initializeScreenDimensions();
 
         // === INITIALISATION DU CAPTEUR ===
         sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         if (sensorManager != null) {
             accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         }
+
+        // Attendre que le layout soit prêt avant d'afficher le texte
+        gameLayout.post(() -> {
+            showIntroText();
+        });
+    }
+
+    private void initializeViews() {
+        gameLayout = findViewById(R.id.main);
+        player = findViewById(R.id.imageView_perso);
+        backgroundImage = findViewById(R.id.imageView_background);
+        introTextView = findViewById(R.id.introTextView);
+
+        // Vérifier que toutes les vues existent
+        if (gameLayout == null) {
+            throw new RuntimeException("gameLayout (R.id.main) not found in layout");
+        }
+        if (player == null) {
+            throw new RuntimeException("player (R.id.imageView_perso) not found in layout");
+        }
+        if (backgroundImage == null) {
+            throw new RuntimeException("backgroundImage (R.id.imageView_background) not found in layout");
+        }
+        if (introTextView == null) {
+            throw new RuntimeException("introTextView (R.id.introTextView) not found in layout");
+        }
+    }
+
+    private void initializeScreenDimensions() {
+        DisplayMetrics displayMetrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+        screenWidth = displayMetrics.widthPixels;
+        screenHeight = displayMetrics.heightPixels;
     }
 
     private void showIntroText() {
@@ -105,7 +154,7 @@ public class Level4Activity extends AppCompatActivity implements SensorEventList
                 public void onAnimationRepeat(android.view.animation.Animation animation) {}
             });
             introTextView.startAnimation(fadeOut);
-        }, 7000);
+        }, 4000);
     }
 
     private void startGame() {
@@ -114,33 +163,214 @@ public class Level4Activity extends AppCompatActivity implements SensorEventList
         // === DÉMARRAGE DE L'ARRIÈRE-PLAN MOBILE ===
         startBackgroundMovement();
 
-        // === INITIALISATION DES PLATEFORMES ===
-        characterMovementHelper = new CharacterMovementHelper(player, gameLayout);
-        characterMovementHelper.updateGroundY();
-
-        platformCreator = new PlatformCreationHelper(Level4Activity.this, gameLayout, player);
-        activePlatforms = platformCreator.creerPlateformes();
-
-        repetitiveJumpRunnable = new Runnable() {
-            @Override
-            public void run() {
-                if (characterMovementHelper != null && !characterMovementHelper.getIsJumping()) {
-                    characterMovementHelper.performJump();
-                }
-                jumpHandler.postDelayed(this, 800);
-            }
-        };
-        jumpHandler.post(repetitiveJumpRunnable); // Saut immédiat au lancement
+        // === INITIALISATION DES PLATEFORMES ET PHYSIQUE ===
+        initializeGamePhysics();
 
         // Délai de 2 secondes avant de commencer à faire apparaître les ennemis
         handler.postDelayed(() -> spawnEnemies(), 2000);
     }
 
-    // === MÉTHODES POUR L'ARRIÈRE-PLAN MOBILE ===
-    // Remplacez votre méthode startBackgroundMovement() par celle-ci :
+    private void initializeGamePhysics() {
+        // Créer la plateforme de départ
+        startPlatform = createStartPlatform();
+
+        // Attendre que les vues soient mesurées avant de positionner le personnage
+        player.post(() -> {
+            // Positionner le personnage sur la plateforme de départ
+            characterX = startPlatform.getX() + (startPlatform.getWidth() - player.getWidth()) / 2;
+            characterY = startPlatform.getY() - player.getHeight();
+
+            player.setX(characterX);
+            player.setY(characterY);
+
+            isOnGround = true; // Le personnage commence sur la plateforme
+
+            Log.d("Level4", "Position initiale - Character: (" + characterX + ", " + characterY +
+                    "), Platform: (" + startPlatform.getX() + ", " + startPlatform.getY() + ")");
+        });
+
+        // Initialiser les plateformes après avoir positionné le personnage
+        platformCreator = new PlatformCreationHelper(Level4Activity.this, gameLayout, player, startPlatform);
+        activePlatforms = platformCreator.creerPlateformes();
+
+        // Démarrer la boucle de jeu
+        startGameLoop();
+    }
+
+    private ImageView createStartPlatform() {
+        // Créer une plateforme de départ
+        ImageView startPlatform = new ImageView(this);
+        startPlatform.setImageResource(R.drawable.plateforme_v1); // Assurez-vous que cette ressource existe
+
+        ConstraintLayout.LayoutParams params = new ConstraintLayout.LayoutParams(
+                400, // largeur
+                100  // hauteur
+        );
+
+        // Positionner la plateforme au bas de l'écran, centrée
+        startPlatform.setLayoutParams(params);
+        startPlatform.setX((screenWidth - 400) / 2f);
+        startPlatform.setY(screenHeight - 200);
+
+        gameLayout.addView(startPlatform);
+        return startPlatform;
+    }
+
+    private void startGameLoop() {
+        gameRunnable = new Runnable() {
+            @Override
+            public void run() {
+                if (gameStarted) {
+                    updateCharacter();
+                }
+                gameHandler.postDelayed(this, 16); // ~60 FPS
+            }
+        };
+        gameHandler.post(gameRunnable);
+    }
+
+    private void updateCharacter() {
+        // Mouvement horizontal basé sur l'inclinaison
+        updateHorizontalMovement();
+
+        // Appliquer la gravité si le personnage n'est pas au sol
+        if (!isOnGround) {
+            velocityY += GRAVITY;
+        }
+
+        // Mettre à jour la position Y
+        characterY += velocityY;
+
+        // Vérifier les collisions avec les plateformes
+        checkPlatformCollisions();
+
+        // Gestion des sauts automatiques
+        handleAutoJump();
+
+        // Vérifier si le personnage tombe dans le vide
+        checkFallIntoVoid();
+
+        // Appliquer la nouvelle position
+        if(!firstJump){
+            player.setX(characterX);
+            player.setY(characterY);
+        }
+    }
+
+    private void updateHorizontalMovement() {
+        // Calculer le mouvement basé sur l'inclinaison
+        float movement = -currentTilt * TILT_SENSITIVITY * MOVEMENT_SPEED;
+        characterX += movement;
+
+        // Vérifier les limites de l'écran
+        if (characterX < 0) {
+            characterX = 0;
+        } else if (characterX + player.getWidth() > screenWidth) {
+            characterX = screenWidth - player.getWidth();
+        }
+    }
+
+    private void handleAutoJump() {
+        long currentTime = System.currentTimeMillis();
+
+        // Si le personnage vient d'atterrir et que le cooldown est passé
+        if (isOnGround && !isJumping && (currentTime - lastJumpTime) > JUMP_COOLDOWN) {
+            performJump();
+            lastJumpTime = currentTime;
+        }
+    }
+
+    private void performJump() {
+        velocityY = JUMP_FORCE;
+        isOnGround = false;
+        isJumping = true;
+    }
+
+    private void checkPlatformCollisions() {
+        isOnGround = false;
+
+        // Vérifier collision avec la plateforme de départ
+        if (isCollidingWithPlatform(startPlatform)) {
+            if (velocityY > 0 &&
+                    characterY + player.getHeight() >= startPlatform.getY() &&
+                    characterY + player.getHeight() <= startPlatform.getY() + startPlatform.getHeight()) {
+
+                characterY = startPlatform.getY() - player.getHeight();
+                velocityY = 0;
+                isOnGround = true;
+                isJumping = false;
+                firstJump = false;
+                return;
+            }
+        }
+
+        // Vérifier collisions avec les autres plateformes
+        if (activePlatforms != null) {
+            for (ImageView platform : activePlatforms) {
+                if (isCollidingWithPlatform(platform)) {
+                    if (velocityY > 0 &&
+                            characterY + player.getHeight() >= platform.getY() &&
+                            characterY + player.getHeight() <= platform.getY() + platform.getHeight()) {
+
+                        characterY = platform.getY() - player.getHeight();
+                        velocityY = 0;
+                        isOnGround = true;
+                        isJumping = false;
+                        firstJump = false;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    private boolean isCollidingWithPlatform(ImageView platform) {
+        // Récupérer les dimensions et positions
+        float charLeft = characterX;
+        float charRight = characterX + player.getWidth();
+        float charTop = characterY;
+        float charBottom = characterY + player.getHeight();
+
+        float platLeft = platform.getX();
+        float platRight = platform.getX() + platform.getWidth();
+        float platTop = platform.getY();
+        float platBottom = platform.getY() + platform.getHeight();
+
+        // Vérifier la collision (intersection des rectangles)
+        return charLeft < platRight &&
+                charRight > platLeft &&
+                charTop < platBottom &&
+                charBottom > platTop;
+    }
+
+    private void checkFallIntoVoid() {
+        // Si le personnage tombe en dessous de l'écran
+        if (characterY > screenHeight + 100) {
+            handleFallIntoVoid();
+        }
+    }
+
+    private void handleFallIntoVoid() {
+        Log.d("Level4", "Le personnage est tombé dans le vide !");
+        respawnCharacter();
+    }
+
+    private void respawnCharacter() {
+        // Remettre le personnage sur la plateforme de départ
+        characterX = startPlatform.getX() + (startPlatform.getWidth() - player.getWidth()) / 2;
+        characterY = startPlatform.getY() - player.getHeight();
+        velocityY = 0;
+        isOnGround = true;
+        isJumping = false;
+        lastJumpTime = 0;
+
+        // Appliquer immédiatement la position
+        player.setX(characterX);
+        player.setY(characterY);
+    }
 
     private void startBackgroundMovement() {
-        if (!isBackgroundMoving) {
+        if (!isBackgroundMoving && backgroundImage != null) {
             isBackgroundMoving = true;
             backgroundRunnable = new Runnable() {
                 @Override
@@ -148,24 +378,26 @@ public class Level4Activity extends AppCompatActivity implements SensorEventList
                     if (isBackgroundMoving) {
                         // Hauteur de l'écran et de l'image de fond
                         int screenHeight = gameLayout.getHeight();
-                        int backgroundImageHeight = findViewById(R.id.imageView_background).getHeight(); // Selon votre XML
+                        int backgroundImageHeight = backgroundImage.getHeight();
+
+                        // Si la hauteur n'est pas encore disponible, utiliser la hauteur de l'écran
+                        if (backgroundImageHeight == 0) {
+                            DisplayMetrics displayMetrics = new DisplayMetrics();
+                            getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+                            backgroundImageHeight = displayMetrics.heightPixels * 2; // Estimation
+                        }
 
                         // Calcul du déplacement maximum possible vers le bas
-                        // L'image peut descendre jusqu'à ce que son haut soit aligné avec le bas de l'écran
                         float maxDownMovement = backgroundImageHeight - screenHeight;
 
-                        // Déplacer l'arrière-plan vers le BAS (valeur positive)
+                        // Déplacer l'arrière-plan vers le BAS
                         backgroundY += BACKGROUND_SPEED;
 
                         // Vérifier si on a atteint la fin du défilement
                         if (backgroundY >= maxDownMovement) {
-                            // Arrêter le mouvement à la position finale exacte
                             backgroundY = maxDownMovement;
                             backgroundImage.setTranslationY(backgroundY);
                             isBackgroundMoving = false;
-
-                            // Optionnel : vous pouvez ajouter une action quand le background s'arrête
-                            // Par exemple, déclencher un événement spécial ou passer au niveau suivant
                             onBackgroundMovementFinished();
                             return;
                         }
@@ -173,7 +405,7 @@ public class Level4Activity extends AppCompatActivity implements SensorEventList
                         // Appliquer le mouvement
                         backgroundImage.setTranslationY(backgroundY);
 
-                        // Continuer l'animation (16ms ≈ 60 FPS)
+                        // Continuer l'animation
                         backgroundHandler.postDelayed(this, 30);
                     }
                 }
@@ -182,25 +414,15 @@ public class Level4Activity extends AppCompatActivity implements SensorEventList
         }
     }
 
-    // Méthode appelée quand le background a fini de se déplacer
     private void onBackgroundMovementFinished() {
-        // Vous pouvez ajouter ici ce que vous voulez faire quand le background s'arrête
-        // Par exemple :
-        // - Augmenter la difficulté du jeu
-        // - Déclencher un boss
-        // - Passer au niveau suivant
-        // - Afficher un message
-
         System.out.println("Le background a atteint la fin !");
-
-        // Exemple : vous pourriez vouloir accélérer l'apparition des ennemis
-        // ou modifier d'autres paramètres du jeu
     }
 
-    // Ajoutez aussi cette méthode pour réinitialiser le background si nécessaire
     private void resetBackgroundPosition() {
         backgroundY = 0f;
-        backgroundImage.setTranslationY(backgroundY);
+        if (backgroundImage != null) {
+            backgroundImage.setTranslationY(backgroundY);
+        }
         isBackgroundMoving = false;
     }
 
@@ -228,7 +450,7 @@ public class Level4Activity extends AppCompatActivity implements SensorEventList
     protected void onResume() {
         super.onResume();
         // === ACTIVATION DU CAPTEUR ET REPRISE DE L'ARRIÈRE-PLAN ===
-        if (accelerometer != null && gameStarted) {
+        if (accelerometer != null && gameStarted && sensorManager != null) {
             sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_GAME);
         }
         resumeBackgroundMovement();
@@ -242,14 +464,6 @@ public class Level4Activity extends AppCompatActivity implements SensorEventList
             sensorManager.unregisterListener(this);
         }
 
-        if (characterMovementHelper != null) {
-            characterMovementHelper.cancelAnimations();
-        }
-
-        if (jumpHandler != null && repetitiveJumpRunnable != null) {
-            jumpHandler.removeCallbacks(repetitiveJumpRunnable);
-        }
-
         // === PAUSE DE L'ARRIÈRE-PLAN ===
         pauseBackgroundMovement();
     }
@@ -259,53 +473,85 @@ public class Level4Activity extends AppCompatActivity implements SensorEventList
         super.onDestroy();
         // === ARRÊT COMPLET DE L'ARRIÈRE-PLAN ===
         stopBackgroundMovement();
+
+        // Nettoyer tous les handlers
+        if (handler != null) {
+            handler.removeCallbacksAndMessages(null);
+        }
+        if (jumpHandler != null) {
+            jumpHandler.removeCallbacksAndMessages(null);
+        }
+        if (backgroundHandler != null) {
+            backgroundHandler.removeCallbacksAndMessages(null);
+        }
+        if (gameHandler != null && gameRunnable != null) {
+            gameHandler.removeCallbacks(gameRunnable);
+        }
     }
 
     // === GESTION DU CAPTEUR POUR LE MOUVEMENT ===
     @Override
     public void onSensorChanged(SensorEvent event) {
-        if (characterMovementHelper != null && gameStarted) {
-            int rotation = getWindowManager().getDefaultDisplay().getRotation();
-            characterMovementHelper.handleSensorEvent(event, rotation);
+        if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
+            // Récupérer l'inclinaison sur l'axe X (gauche/droite)
+            currentTilt = event.values[0];
+
+            // Appliquer un seuil pour éviter les mouvements involontaires
+            if (Math.abs(currentTilt) < 1.0f) {
+                currentTilt = 0;
+            }
         }
     }
 
     @Override
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
+        // Pas d'implémentation nécessaire
     }
 
-    // === RESTE DU CODE INCHANGÉ ===
     private void spawnEnemies() {
+        if (!gameStarted) return;
+
         for (int i = 0; i < ENEMY_COUNT; i++) {
             handler.postDelayed(this::createEnemy, i * SPAWN_DELAY);
         }
     }
 
     private void createEnemy() {
+        if (!gameStarted || gameLayout == null) return;
+
         ImageView enemy = new ImageView(this);
         enemy.setImageResource(R.drawable.evil);
         ConstraintLayout.LayoutParams params = new ConstraintLayout.LayoutParams(ENEMY_SIZE, ENEMY_SIZE);
 
-        int maxWidth = gameLayout.getWidth() - ENEMY_SIZE;
-        int randomX = random.nextInt(Math.max(maxWidth, 1));
-        enemy.setX(randomX);
-        enemy.setY(0);
-        enemy.setLayoutParams(params);
+        int gameLayoutWidth = gameLayout.getWidth();
+        if (gameLayoutWidth > 0) {
+            int maxWidth = gameLayoutWidth - ENEMY_SIZE;
+            int randomX = maxWidth > 0 ? random.nextInt(maxWidth) : 0;
+            enemy.setX(randomX);
+            enemy.setY(0);
+            enemy.setLayoutParams(params);
 
-        gameLayout.addView(enemy);
-
-        animateEnemy(enemy);
+            gameLayout.addView(enemy);
+            animateEnemy(enemy);
+        }
     }
 
     private void animateEnemy(ImageView enemy) {
+        if (gameLayout == null) return;
+
         int screenHeight = gameLayout.getHeight();
         enemy.animate()
                 .translationY(screenHeight)
                 .setDuration(4000 + random.nextInt(2000))
                 .setInterpolator(new LinearInterpolator())
                 .withEndAction(() -> {
-                    gameLayout.removeView(enemy);
-                    createEnemy();
+                    if (gameLayout != null) {
+                        gameLayout.removeView(enemy);
+                        // Recréer un ennemi seulement si le jeu continue
+                        if (gameStarted) {
+                            handler.postDelayed(this::createEnemy, SPAWN_DELAY);
+                        }
+                    }
                 })
                 .start();
 
@@ -316,7 +562,7 @@ public class Level4Activity extends AppCompatActivity implements SensorEventList
         Runnable check = new Runnable() {
             @Override
             public void run() {
-                if (enemy.getParent() == null) return;
+                if (enemy.getParent() == null || !gameStarted) return;
 
                 if (checkCollision(player, enemy)) {
                     Intent intent = new Intent(Level4Activity.this, GameOverActivity.class);
@@ -331,6 +577,8 @@ public class Level4Activity extends AppCompatActivity implements SensorEventList
     }
 
     private boolean checkCollision(View v1, View v2) {
+        if (v1 == null || v2 == null) return false;
+
         Rect r1 = new Rect();
         Rect r2 = new Rect();
         v1.getHitRect(r1);
