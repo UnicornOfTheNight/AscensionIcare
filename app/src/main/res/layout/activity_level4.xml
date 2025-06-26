@@ -9,41 +9,46 @@
     tools:context=".Level4Activity">
 
     <!-- Image de fond qui remplit tout l'écran et dépasse en haut -->
-    <ImageView
-        android:id="@+id/imageView_background"
+
+
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="4266dp"
-        android:contentDescription="@string/background_image_for_level_1"
+        android:layout_gravity="bottom"
         android:scaleType="centerCrop"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="@id/main"
+        app:layout_constraintEnd_toEndOf="@id/main"
+        app:layout_constraintStart_toStartOf="@id/main"
+        app:layout_constraintTop_toTopOf="@id/main"
         app:layout_constraintVertical_bias="1.0"
-        app:srcCompat="@drawable/bgniveau4" />
+        tools:ignore="MissingConstraints">
 
-    <!-- Plateforme positionnée en bas au centre -->
-    <ImageView
-        android:id="@+id/imageView_plateforme"
-        android:layout_width="300dp"
-        android:layout_height="25dp"
-        android:layout_marginBottom="20dp"
-        android:contentDescription="Plateforme"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:srcCompat="@drawable/plateforme_v1" />
+        <ImageView
+            android:id="@+id/imageView_background"
+            android:layout_width="match_parent"
+            android:layout_height="4266dp"
+            android:contentDescription="@string/background_image_for_level_1"
+            android:scaleType="centerCrop"
+            app:layout_constraintBottom_toBottomOf="@id/main"
+            app:layout_constraintEnd_toEndOf="@id/main"
+            app:layout_constraintStart_toStartOf="@id/main"
+            app:layout_constraintTop_toTopOf="@id/main"
+            app:layout_constraintVertical_bias="1.0"
+            app:srcCompat="@drawable/bgniveau4" />
 
-    <!-- Personnage positionné sur la plateforme -->
-    <ImageView
-        android:id="@+id/imageView_perso"
-        android:layout_width="118dp"
-        android:layout_height="117dp"
-        android:contentDescription="Personnage"
-        app:layout_constraintBottom_toTopOf="@+id/imageView_plateforme"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:srcCompat="@drawable/personnage" />
+        <ImageView
+            android:id="@+id/imageView_plateforme"
+            android:layout_width="80dp"
+            android:layout_height="25dp"
+            android:layout_gravity="bottom|center"
+            android:contentDescription="@string/background_image_for_level_1"
+            android:elevation="4dp"
+            android:translationY="-20dp"
+            android:visibility="visible"
+            app:layout_constraintBottom_toBottomOf="@id/imageView_background"
+            app:srcCompat="@drawable/plateforme_v1" />
+
+    </FrameLayout>
 
     <!-- Texte d'introduction -->
     <TextView
@@ -65,5 +70,15 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
+
+    <ImageView
+        android:id="@+id/imageView_perso"
+        android:layout_width="118dp"
+        android:layout_height="117dp"
+        android:contentDescription="Personnage"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:srcCompat="@drawable/personnage" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

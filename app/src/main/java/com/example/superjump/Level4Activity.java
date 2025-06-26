@@ -121,6 +121,7 @@ public class Level4Activity extends AppCompatActivity implements SensorEventList
         if (introTextView == null) {
             throw new RuntimeException("introTextView (R.id.introTextView) not found in layout");
         }
+        player.setY(player.getY() - 25);
     }
 
     private void initializeScreenDimensions() {

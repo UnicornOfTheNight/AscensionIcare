@@ -18,6 +18,7 @@ import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 
 import java.util.List;
+import java.util.Iterator;
 
 public class Level1Activity extends AppCompatActivity implements SensorEventListener {
     private ImageView character;
@@ -69,6 +70,11 @@ public class Level1Activity extends AppCompatActivity implements SensorEventList
     private long lastJumpTime = 0;
     private final long JUMP_COOLDOWN = 100; // Cooldown en millisecondes entre sauts
 
+    // Variables pour le système de défilement
+    private final float SCROLL_DISTANCE = 400f; // Distance de défilement en pixels
+    private boolean isScrolling = false;
+    private float scrollOffset = 0f; // Décalage total du défilement
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -100,7 +106,6 @@ public class Level1Activity extends AppCompatActivity implements SensorEventList
         });
 
         resumeButton.setOnClickListener(v -> {
-
             isPaused = false;
             resumeTimer();
             resumeGame();
@@ -255,9 +260,6 @@ public class Level1Activity extends AppCompatActivity implements SensorEventList
         // Appliquer la gravité si le personnage n'est pas au sol
         if (!isOnGround) {
             velocityY += GRAVITY;
-//            if (velocityY > TERMINAL_VELOCITY) {
-//                velocityY = TERMINAL_VELOCITY;
-//            }
         }
 
         // Mettre à jour la position Y
@@ -305,11 +307,9 @@ public class Level1Activity extends AppCompatActivity implements SensorEventList
     }
 
     private void performJump() {
-            velocityY = JUMP_FORCE;
-            isOnGround = false;
-            isJumping = true;
-
-
+        velocityY = JUMP_FORCE;
+        isOnGround = false;
+        isJumping = true;
     }
 
     private void checkPlatformCollisions() {
@@ -328,9 +328,86 @@ public class Level1Activity extends AppCompatActivity implements SensorEventList
                     isOnGround = true;
                     isJumping = false;
                     firstJump = false;
+
+                    // Vérifier si la plateforme est dans la moitié supérieure de l'écran
+                    checkForScrollTrigger(platform);
                     break;
                 }
             }
+        }
+    }
+
+    private void checkForScrollTrigger(ImageView platform) {
+        // Si la plateforme sur laquelle le personnage atterrit est dans la moitié supérieure de l'écran
+        if (platform.getY() < screenHeight / 2) {
+            Log.d("Scroll", "Déclenchement du défilement - Plateforme Y: " + platform.getY() + ", Moitié écran: " + (screenHeight / 2));
+            triggerScroll();
+        }
+    }
+
+    private void triggerScroll() {
+        if (isScrolling) return; // Éviter les défilements multiples
+
+        isScrolling = true;
+        scrollOffset += SCROLL_DISTANCE;
+
+        Log.d("Scroll", "Début du défilement - Offset: " + scrollOffset);
+
+        // Faire descendre toutes les plateformes existantes
+        for (ImageView platform : platforms) {
+            float newY = platform.getY() + SCROLL_DISTANCE;
+            platform.setY(newY);
+            Log.d("Scroll", "Plateforme déplacée vers Y: " + newY);
+        }
+
+        // Faire descendre le personnage
+        characterY += SCROLL_DISTANCE;
+        character.setY(characterY);
+        Log.d("Scroll", "Personnage déplacé vers Y: " + characterY);
+
+        // Supprimer les plateformes qui sont maintenant hors écran (en bas)
+        removePlatformsBelowScreen();
+
+        // Créer de nouvelles plateformes en haut
+        createNewPlatformsAbove();
+
+        isScrolling = false;
+        Log.d("Scroll", "Fin du défilement");
+    }
+
+    private void removePlatformsBelowScreen() {
+        Iterator<ImageView> iterator = platforms.iterator();
+        while (iterator.hasNext()) {
+            ImageView platform = iterator.next();
+            // Supprimer les plateformes qui sont trop loin en bas de l'écran
+            if (platform.getY() > screenHeight + 200) {
+                Log.d("Scroll", "Suppression plateforme Y: " + platform.getY());
+                ((LinearLayout) findViewById(R.id.main)).removeView(platform);
+                iterator.remove();
+            }
+        }
+    }
+
+    private void createNewPlatformsAbove() {
+        // Créer de nouvelles plateformes en utilisant le PlatformCreationHelper
+        // mais en modifiant temporairement la référence pour qu'elles soient créées en haut
+
+        // Trouver la plateforme la plus haute actuellement
+        ImageView highestPlatform = null;
+        float highestY = screenHeight;
+
+        for (ImageView platform : platforms) {
+            if (platform.getY() < highestY) {
+                highestY = platform.getY();
+                highestPlatform = platform;
+            }
+        }
+
+        if (highestPlatform != null) {
+            // Créer de nouvelles plateformes au-dessus de la plus haute plateforme existante
+            List<ImageView> newPlatforms = platformCreator.createPlatformsAbove(highestPlatform, 3);
+            platforms.addAll(newPlatforms);
+            Log.d("Scroll", "Créées " + newPlatforms.size() + " nouvelles plateformes");
         }
     }
 
@@ -377,8 +454,6 @@ public class Level1Activity extends AppCompatActivity implements SensorEventList
         // Appliquer immédiatement la position
         character.setX(characterX);
         character.setY(characterY);
-
-        //Toast.makeText(this, "Respawn !", Toast.LENGTH_SHORT).show();
     }
 
     // Méthodes pour ajuster les paramètres en temps réel
@@ -403,7 +478,6 @@ public class Level1Activity extends AppCompatActivity implements SensorEventList
             pauseMenu.setElevation(6);
             pauseButton.setVisibility(View.GONE);
             isPaused = true;
-
         } else {
             // Pause automatique (changement d'activité)
             pauseTimer();
@@ -420,7 +494,6 @@ public class Level1Activity extends AppCompatActivity implements SensorEventList
             pauseMenu.setVisibility(View.GONE);
             pauseButton.setVisibility(View.VISIBLE);
             resumeTimer();
-
             Log.d("AAA", "test");
         }
         if (accelerometer != null) {
