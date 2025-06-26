@@ -207,7 +207,7 @@ public class Level1Activity extends AppCompatActivity implements SensorEventList
 
         // Initialiser les plateformes après avoir positionné le personnage
         platformCreator = new PlatformCreationHelper(Level1Activity.this, gameLayout, player, startPlatform);
-        activePlatforms = platformCreator.creerPlateformes();
+        activePlatforms = platformCreator.creerPlateformes(false);
 
         // Démarrer la boucle de jeu
         startGameLoop();
@@ -271,6 +271,8 @@ public class Level1Activity extends AppCompatActivity implements SensorEventList
             player.setX(characterX);
             player.setY(characterY);
         }
+
+
     }
 
     private void updateHorizontalMovement() {
@@ -333,6 +335,7 @@ public class Level1Activity extends AppCompatActivity implements SensorEventList
                         isOnGround = true;
                         isJumping = false;
                         firstJump = false;
+
                         break;
                     }
                 }

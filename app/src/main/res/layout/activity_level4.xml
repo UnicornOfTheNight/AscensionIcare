@@ -80,4 +80,74 @@
         app:layout_constraintStart_toStartOf="parent"
         app:srcCompat="@drawable/personnage" />
 
+    <TextView
+        android:id="@+id/timerText"
+        android:translationY="40dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
+        android:background="#88000000"
+        android:fontFamily="@font/goldenage"
+        android:padding="12dp"
+        android:text="00:00:00"
+        android:textColor="#FFFFFF"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:typeface="monospace"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <Button
+        android:id="@+id/pauseButton"
+        android:translationY="40dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:layout_marginTop="208dp"
+        android:layout_marginEnd="18dp"
+        android:backgroundTint="#8A00FF"
+        android:fontFamily="@font/goldenage"
+        android:text="Pause"
+        android:textColor="#FFFFFF"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.822" />
+
+    <!-- Menu Pause -->
+    <LinearLayout
+        android:id="@+id/pauseMenu"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#88000000"
+        android:gravity="center"
+        android:elevation="6dp"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <Button
+            android:id="@+id/resumeButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp"
+            android:backgroundTint="#8A00FF"
+            android:fontFamily="@font/goldenage"
+            android:text="Retourner"
+            android:elevation="6dp"
+            android:textColor="#FFFFFF"
+            android:textStyle="bold" />
+
+        <Button
+            android:id="@+id/quitButton"
+            android:elevation="6dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:backgroundTint="#FF0000"
+            android:fontFamily="@font/goldenage"
+            android:text="Quitter"
+            android:textColor="#FFFFFF"
+            android:textStyle="bold" />
+    </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -60,7 +60,7 @@
         android:fontFamily="@font/octal"
         android:gravity="center"
         android:padding="24dp"
-        android:text="Icare rejoint le soleil à toute vitesse, porté par des ailes fragiles, devant un décor grec de ruines, de statues et de nature. Il atteint les hauteurs, se brûle les ailes… et retombe.\nEssaye d’atteindre l’astre pour remporter cette partie."
+        android:text="Icare rejoint le soleil à toute vitesse, porté par des ailes fragiles, devant un décor grec de ruines, de statues et de nature. Il atteint les hauteurs, se brûle les ailes… et retombe.\n\nEssaye d’atteindre l’astre pour remporter cette partie."
         android:textColor="#FFFFFF"
         android:textSize="18sp"
         android:textStyle="bold"

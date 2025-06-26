@@ -1,5 +1,7 @@
 package com.example.superjump;
 
+import static android.view.View.VISIBLE;
+
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Rect;
@@ -14,8 +16,10 @@ import android.util.Log;
 import android.view.View;
 import android.view.animation.AlphaAnimation;
 import android.view.animation.LinearInterpolator;
+import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
@@ -107,8 +111,102 @@ public class Level4Activity extends AppCompatActivity implements SensorEventList
         gameLayout.post(() -> {
             showIntroText();
         });
+
+        pauseButton = findViewById(R.id.pauseButton);
+        resumeButton = findViewById(R.id.resumeButton);
+        quitButton = findViewById(R.id.quitButton);
+        pauseMenu = findViewById(R.id.pauseMenu);
+        timerText = findViewById(R.id.timerText);
+
+        // Initialiser le chronomètre
+        initTimer();
+        startTimer();
+
+        pauseButton.setOnClickListener(v -> {
+            isManuallyPaused = true;
+            pauseTimer();
+            onPause(); // Appelle pause manuelle
+            pauseButton.setVisibility(VISIBLE);
+            resumeButton.setVisibility(VISIBLE);
+            Log.d("HHH", "pauseButton.getVisibility(): " + pauseButton.getVisibility());
+        });
+
+        resumeButton.setOnClickListener(v -> {
+            resumeTimer();
+            resumeGame();
+        });
+
+        quitButton.setOnClickListener(v -> {
+            isManuallyPaused = false;
+            stopTimer();
+            Intent intent = new Intent(Level4Activity.this, MainActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            //intent.putExtra("goToTab", 0); // ouvrir l'onglet "Jouer"
+            startActivity(intent);
+            finish();
+        });
     }
 
+    private void initTimer() {
+        timerHandler = new Handler();
+        timerRunnable = new Runnable() {
+            @Override
+            public void run() {
+                if (isTimerRunning) {
+                    long currentTime = System.currentTimeMillis();
+                    long elapsedTime = currentTime - startTime + pausedTime;
+                    updateTimerDisplay(elapsedTime);
+                    timerHandler.postDelayed(this, 10); // Mise à jour toutes les 10ms
+                }
+            }
+        };
+    }
+
+    private void updateTimerDisplay(long elapsedTime) {
+        int minutes = (int) (elapsedTime / 60000);
+        int seconds = (int) ((elapsedTime % 60000) / 1000);
+        int milliseconds = (int) ((elapsedTime % 1000) / 10);
+
+        String timeText = String.format("%02d:%02d:%02d", minutes, seconds, milliseconds);
+        timerText.setText(timeText);
+    }
+
+    private void startTimer() {
+        if (!isTimerRunning) {
+            startTime = System.currentTimeMillis();
+            isTimerRunning = true;
+            timerHandler.post(timerRunnable);
+        }
+    }
+
+    private void resumeGame() {
+        isManuallyPaused = false;
+//        pauseMenu.setVisibility(View.GONE);
+//        pauseButton.setVisibility(VISIBLE);
+    }
+
+    private void pauseTimer() {
+        if (isTimerRunning) {
+            isTimerRunning = false;
+            pausedTime += System.currentTimeMillis() - startTime;
+            timerHandler.removeCallbacks(timerRunnable);
+        }
+    }
+
+    private void resumeTimer() {
+        if (!isTimerRunning) {
+            startTime = System.currentTimeMillis();
+            isTimerRunning = true;
+            timerHandler.post(timerRunnable);
+        }
+    }
+
+    private void stopTimer() {
+        isTimerRunning = false;
+        if (timerHandler != null) {
+            timerHandler.removeCallbacks(timerRunnable);
+        }
+    }
     private void initializeViews() {
         gameLayout = findViewById(R.id.main);
         player = findViewById(R.id.imageView_perso);
@@ -144,7 +242,7 @@ public class Level4Activity extends AppCompatActivity implements SensorEventList
 
     private void showIntroText() {
         // Rendre le texte visible
-        introTextView.setVisibility(View.VISIBLE);
+        introTextView.setVisibility(VISIBLE);
 
         // Animation d'apparition
         AlphaAnimation fadeIn = new AlphaAnimation(0.0f, 1.0f);
@@ -209,11 +307,22 @@ public class Level4Activity extends AppCompatActivity implements SensorEventList
 
         // Initialiser les plateformes après avoir positionné le personnage
         platformCreator = new PlatformCreationHelper(Level4Activity.this, gameLayout, player, startPlatform);
-        activePlatforms = platformCreator.creerPlateformes();
+        activePlatforms = platformCreator.creerPlateformes(false);
 
         // Démarrer la boucle de jeu
         startGameLoop();
     }
+    private Button pauseButton, resumeButton, quitButton;
+    private LinearLayout pauseMenu;
+    private TextView timerText;
+    private boolean isManuallyPaused = false;
+
+    // Variables pour le chronomètre
+    private Handler timerHandler;
+    private Runnable timerRunnable;
+    private long startTime;
+    private long pausedTime = 0;
+    private boolean isTimerRunning = false;
 
     private ImageView createStartPlatform() {
         // Créer une plateforme de départ
@@ -270,10 +379,15 @@ public class Level4Activity extends AppCompatActivity implements SensorEventList
 
         // Appliquer la nouvelle position
         if(!firstJump){
-            player.setX(characterX);
-            player.setY(characterY);
+            if(!onPause){
+                player.setX(characterX);
+                player.setY(characterY);
+            }
+
         }
     }
+
+    boolean onPause = false;
 
     private void updateHorizontalMovement() {
         // Calculer le mouvement basé sur l'inclinaison
@@ -542,6 +656,7 @@ public class Level4Activity extends AppCompatActivity implements SensorEventList
     @Override
     protected void onResume() {
         super.onResume();
+        onPause = false;
         // === ACTIVATION DU CAPTEUR ET REPRISE DE L'ARRIÈRE-PLAN ===
         if (accelerometer != null && gameStarted && sensorManager != null) {
             sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_GAME);
@@ -553,6 +668,7 @@ public class Level4Activity extends AppCompatActivity implements SensorEventList
     @Override
     protected void onPause() {
         super.onPause();
+        onPause = true;
         // === DÉSACTIVATION DU CAPTEUR ET ANIMATIONS ===
         if (sensorManager != null) {
             sensorManager.unregisterListener(this);
@@ -613,7 +729,7 @@ public class Level4Activity extends AppCompatActivity implements SensorEventList
     }
 
     private void createEnemy() {
-        if (!gameStarted || gameLayout == null) return;
+        if (!gameStarted || gameLayout == null ||onPause) return;
 
         ImageView enemy = new ImageView(this);
         enemy.setImageResource(R.drawable.evil);
@@ -633,7 +749,7 @@ public class Level4Activity extends AppCompatActivity implements SensorEventList
     }
 
     private void animateEnemy(ImageView enemy) {
-        if (gameLayout == null) return;
+        if (gameLayout == null || onPause) return;
 
         int screenHeight = gameLayout.getHeight();
         enemy.animate()

@@ -51,14 +51,16 @@ public class PlatformCreationHelper {
         this.platformActivated.add(false); // La plateforme de départ n'est pas activée
     }
 
-    public List<ImageView> creerPlateformes() {
+    public List<ImageView> creerPlateformes(boolean effritage) {
         do {
-            existingPlatforms = creerPlateformes(NOMBRE_PLATEFORMES_DEFAUT, LARGEUR_PLATEFORME_DP_DEFAUT, HAUTEUR_PLATEFORME_DP_DEFAUT, MAX_PLACEMENT_ATTEMPTS_DEFAUT);
+
+            existingPlatforms = creerPlateformes(effritage, NOMBRE_PLATEFORMES_DEFAUT, LARGEUR_PLATEFORME_DP_DEFAUT, HAUTEUR_PLATEFORME_DP_DEFAUT, MAX_PLACEMENT_ATTEMPTS_DEFAUT);
         } while (existingPlatforms.isEmpty());
         return existingPlatforms;
     }
 
-    private List<ImageView> creerPlateformes(int nombrePlateformes, int largeurPlateformeDp, int hauteurPlateformeDp, int maxAttempts) {
+
+    private List<ImageView> creerPlateformes(boolean effritage, int nombrePlateformes, int largeurPlateformeDp, int hauteurPlateformeDp, int maxAttempts) {
         if (gameAreaLayout == null || context == null) {
             return existingPlatforms;
         }
@@ -67,7 +69,7 @@ public class PlatformCreationHelper {
         int gameAreaHeight = gameAreaLayout.getHeight();
 
         if (gameAreaWidth == 0 || gameAreaHeight == 0) {
-            gameAreaLayout.post(() -> creerPlateformes(nombrePlateformes, largeurPlateformeDp, hauteurPlateformeDp, maxAttempts));
+            gameAreaLayout.post(() -> creerPlateformes(effritage, nombrePlateformes, largeurPlateformeDp, hauteurPlateformeDp, maxAttempts));
             return existingPlatforms;
         }
 
@@ -151,6 +153,8 @@ public class PlatformCreationHelper {
             } while (isOverlapping && placementAttempts < maxAttempts);
 
             if (!isOverlapping) {
+
+
                 platformImageView.setX(randomX);
                 platformImageView.setY(randomY);
                 Log.d("landOnPlatform", "position " + randomY);
@@ -158,7 +162,8 @@ public class PlatformCreationHelper {
                 gameAreaLayout.addView(platformImageView);
 
                 // Déterminer si cette plateforme peut disparaître
-                boolean canDisappear = (i > 0) && (random.nextInt(100) < PLATFORM_DISAPPEAR_PROBABILITY);
+                boolean canDisappear = false;
+                if(effritage)  canDisappear = (i > 0) && (random.nextInt(100) < PLATFORM_DISAPPEAR_PROBABILITY);
                 platformDisappearFlags.add(canDisappear);
                 platformActivated.add(false); // Pas encore activée par le joueur
                 if(canDisappear) platformImageView.setImageResource(R.drawable.plateforme2);

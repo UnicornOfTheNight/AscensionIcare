@@ -1,6 +1,7 @@
 package com.example.superjump;
 
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Rect;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -98,7 +99,7 @@ public class Level2Activity extends AppCompatActivity implements SensorEventList
 
         // Initialiser les plateformes après avoir positionné le personnage
         platformCreator = new PlatformCreationHelper(Level2Activity.this, findViewById(R.id.main), character, startPlatform);
-        platforms = platformCreator.creerPlateformes();
+        platforms = platformCreator.creerPlateformes(true);
     }
 
     private void initializeSensors() {
@@ -169,6 +170,14 @@ public class Level2Activity extends AppCompatActivity implements SensorEventList
         if(!firstJump){
             character.setX(characterX);
             character.setY(characterY);
+
+            if(character.getY() >= screenHeight - character.getHeight() - 50){
+                Intent homeIntent = new Intent(Level2Activity.this, Level4Activity.class);
+                homeIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                homeIntent.putExtra("goToTab", 0); // si tu veux ouvrir un onglet particulier
+                startActivity(homeIntent);
+                finish();
+            }
         }
     }
 
