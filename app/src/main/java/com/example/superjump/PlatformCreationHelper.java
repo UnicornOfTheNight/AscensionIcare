@@ -83,6 +83,7 @@ public class PlatformCreationHelper {
         // loop for platforms creation
         for (int i = 0; i < nombrePlateformes && (i == 0 || newPlatformRect.top >= 600); i++) {
             ImageView platformImageView = new ImageView(context);
+            platformImageView.setElevation(0);
             platformImageView.setImageResource(R.drawable.plateforme_v1);
             ConstraintLayout.LayoutParams params = new ConstraintLayout.LayoutParams(
                     largeurPlateformePx,

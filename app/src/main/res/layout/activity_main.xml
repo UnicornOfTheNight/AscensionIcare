@@ -120,37 +120,7 @@
                 android:fontFamily="@font/goldenage"/>
         </LinearLayout>
 
-        <!-- Container for parameters elements -->
-        <LinearLayout
-            android:id="@+id/layout_parameters_buttons"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:gravity="center_horizontal"
-            android:orientation="vertical"
-            android:padding="16dp"
-            tools:visibility="visible">
 
-            <!-- Switch to enable/disable sound -->
-            <com.google.android.material.switchmaterial.SwitchMaterial
-                android:id="@+id/switch_parametres_son"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:text="@string/son"
-                android:textSize="16sp"
-                android:layout_margin="50dp"
-                android:textStyle="bold"
-                android:fontFamily="@font/goldenage"/>
-
-            <Button
-                android:id="@+id/bt_effacerDonnees"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/effacer_donnees"
-                android:textStyle="bold"
-                android:fontFamily="@font/goldenage"/>
-
-        </LinearLayout>
 
     </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

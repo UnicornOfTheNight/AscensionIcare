@@ -58,10 +58,7 @@ public class MainActivity extends AppCompatActivity {
         tabLayoutMenu = findViewById(R.id.tabLayout_menu);
         layoutLevelsButtons = findViewById(R.id.layout_levels_buttons);
         layoutScoresButtons = findViewById(R.id.layout_scores_buttons);
-        layoutParametersButtons = findViewById(R.id.layout_parameters_buttons);
         textArea_scores = findViewById(R.id.txt_scores);
-        bt_effacer_donnees = findViewById(R.id.bt_effacerDonnees);
-        switch_son = findViewById(R.id.switch_parametres_son);
 
         boolean sonActive = loadSoundPreference();
         switch_son.setChecked(sonActive);

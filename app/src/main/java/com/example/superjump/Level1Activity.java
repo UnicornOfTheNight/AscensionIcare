@@ -1,6 +1,7 @@
 package com.example.superjump;
 
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Rect;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -10,7 +11,11 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.View;
+import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.animation.Animator;
@@ -24,6 +29,19 @@ public class Level1Activity extends AppCompatActivity implements SensorEventList
     private ImageView startPlatform;
     private PlatformCreationHelper platformCreator;
     private List<ImageView> platforms;
+
+    // Éléments de pause
+    private Button pauseButton, resumeButton, quitButton;
+    private LinearLayout pauseMenu;
+    private TextView timerText;
+    private boolean isManuallyPaused = false;
+
+    // Variables pour le chronomètre
+    private Handler timerHandler;
+    private Runnable timerRunnable;
+    private long startTime;
+    private long pausedTime = 0;
+    private boolean isTimerRunning = false;
 
     // Variables pour la physique
     private float velocityY = 0;
@@ -59,13 +77,111 @@ public class Level1Activity extends AppCompatActivity implements SensorEventList
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
         setContentView(R.layout.activity_level1);
+
+        // Initialiser les éléments de pause
+        initializePauseElements();
+
+        // Initialiser et démarrer le chronomètre
+        initTimer();
+        startTimer();
 
         initializeGame();
         initializeSensors();
         startGameLoop();
     }
+
+    private void initializePauseElements() {
+        pauseButton = findViewById(R.id.pauseButton);
+        resumeButton = findViewById(R.id.resumeButton);
+        quitButton = findViewById(R.id.quitButton);
+        pauseMenu = findViewById(R.id.pauseMenu);
+        timerText = findViewById(R.id.timerText);
+
+        pauseButton.setOnClickListener(v -> {
+            isManuallyPaused = true;
+            pauseTimer();
+            onPause(); // Appelle pause manuelle
+        });
+
+        resumeButton.setOnClickListener(v -> {
+
+            isPaused = false;
+            resumeTimer();
+            resumeGame();
+        });
+
+        quitButton.setOnClickListener(v -> {
+            isManuallyPaused = false;
+            stopTimer();
+            Intent intent = new Intent(Level1Activity.this, MainActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            startActivity(intent);
+            finish();
+        });
+    }
+
+    private void initTimer() {
+        timerHandler = new Handler();
+        timerRunnable = new Runnable() {
+            @Override
+            public void run() {
+                if (isTimerRunning) {
+                    long currentTime = System.currentTimeMillis();
+                    long elapsedTime = currentTime - startTime + pausedTime;
+                    updateTimerDisplay(elapsedTime);
+                    timerHandler.postDelayed(this, 10); // Mise à jour toutes les 10ms
+                }
+            }
+        };
+    }
+
+    private void startTimer() {
+        if (!isTimerRunning) {
+            startTime = System.currentTimeMillis();
+            isTimerRunning = true;
+            timerHandler.post(timerRunnable);
+        }
+    }
+
+    private void pauseTimer() {
+        if (isTimerRunning) {
+            isTimerRunning = false;
+            pausedTime += System.currentTimeMillis() - startTime;
+            timerHandler.removeCallbacks(timerRunnable);
+        }
+    }
+
+    private void resumeTimer() {
+        if (!isTimerRunning) {
+            startTime = System.currentTimeMillis();
+            isTimerRunning = true;
+            timerHandler.post(timerRunnable);
+        }
+    }
+
+    private void stopTimer() {
+        isTimerRunning = false;
+        if (timerHandler != null) {
+            timerHandler.removeCallbacks(timerRunnable);
+        }
+    }
+
+    private void updateTimerDisplay(long elapsedTime) {
+        int minutes = (int) (elapsedTime / 60000);
+        int seconds = (int) ((elapsedTime % 60000) / 1000);
+        int milliseconds = (int) ((elapsedTime % 1000) / 10);
+
+        String timeText = String.format("%02d:%02d:%02d", minutes, seconds, milliseconds);
+        timerText.setText(timeText);
+    }
+
+    private void resumeGame() {
+        isManuallyPaused = false;
+        pauseMenu.setVisibility(View.GONE);
+        pauseButton.setVisibility(View.VISIBLE);
+    }
+
     private void initializeGame() {
         // Récupérer les dimensions de l'écran
         DisplayMetrics displayMetrics = new DisplayMetrics();
@@ -187,16 +303,18 @@ public class Level1Activity extends AppCompatActivity implements SensorEventList
         long currentTime = System.currentTimeMillis();
 
         // Si le personnage vient d'atterrir et que le cooldown est passé
-        if (isOnGround && !isJumping && (currentTime - lastJumpTime) > JUMP_COOLDOWN) {
+        if (isOnGround && !isJumping && (currentTime - lastJumpTime) > JUMP_COOLDOWN && !isPaused) {
             performJump();
             lastJumpTime = currentTime;
         }
     }
 
     private void performJump() {
-        velocityY = JUMP_FORCE;
-        isOnGround = false;
-        isJumping = true;
+            velocityY = JUMP_FORCE;
+            isOnGround = false;
+            isJumping = true;
+
+
     }
 
     private void checkPlatformCollisions() {
@@ -283,22 +401,42 @@ public class Level1Activity extends AppCompatActivity implements SensorEventList
     }
 
     @Override
+    protected void onPause() {
+        super.onPause();
+        if (isManuallyPaused) {
+            pauseMenu.setVisibility(View.VISIBLE);
+            pauseMenu.setElevation(6);
+            pauseButton.setVisibility(View.GONE);
+            isPaused = true;
+
+        } else {
+            // Pause automatique (changement d'activité)
+            pauseTimer();
+        }
+        sensorManager.unregisterListener(this);
+    }
+
+    boolean isPaused = false;
+
+    @Override
     protected void onResume() {
         super.onResume();
+        if (!isManuallyPaused) {
+            pauseMenu.setVisibility(View.GONE);
+            pauseButton.setVisibility(View.VISIBLE);
+            resumeTimer();
+
+            Log.d("AAA", "test");
+        }
         if (accelerometer != null) {
             sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_GAME);
         }
     }
 
     @Override
-    protected void onPause() {
-        super.onPause();
-        sensorManager.unregisterListener(this);
-    }
-
-    @Override
     protected void onDestroy() {
         super.onDestroy();
+        stopTimer();
         // Arrêter la boucle de jeu
         if (gameHandler != null && gameRunnable != null) {
             gameHandler.removeCallbacks(gameRunnable);
