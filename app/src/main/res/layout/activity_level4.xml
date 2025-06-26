@@ -10,8 +10,8 @@
 
     <!-- Image de fond qui remplit tout l'écran et dépasse en haut -->
 
-
     <FrameLayout
+        android:id="@+id/backgroundFrameLayout"
         android:layout_width="match_parent"
         android:layout_height="4266dp"
         android:layout_gravity="bottom"
@@ -38,12 +38,11 @@
 
         <ImageView
             android:id="@+id/imageView_plateforme"
-            android:layout_width="80dp"
-            android:layout_height="25dp"
+            android:layout_width="40dp"
+            android:layout_height="10dp"
             android:layout_gravity="bottom|center"
             android:contentDescription="@string/background_image_for_level_1"
             android:elevation="4dp"
-            android:translationY="-20dp"
             android:visibility="visible"
             app:layout_constraintBottom_toBottomOf="@id/imageView_background"
             app:srcCompat="@drawable/plateforme_v1" />
@@ -73,8 +72,8 @@
 
     <ImageView
         android:id="@+id/imageView_perso"
-        android:layout_width="118dp"
-        android:layout_height="117dp"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
         android:contentDescription="Personnage"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"

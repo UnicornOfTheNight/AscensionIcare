@@ -15,14 +15,14 @@ public class PlatformCreationHelper {
     private ImageView characterImageView;
 
     // platforms constants
-    private static final int NOMBRE_PLATEFORMES_DEFAUT = 6;
-    private static final int LARGEUR_PLATEFORME_DP_DEFAUT = 80;
-    private static final int HAUTEUR_PLATEFORME_DP_DEFAUT = 25;
-    private static final int MAX_PLACEMENT_ATTEMPTS_DEFAUT = 50;
+    private static final int NOMBRE_PLATEFORMES_DEFAUT = 60;
+    private static final int LARGEUR_PLATEFORME_DP_DEFAUT = 40;
+    private static final int HAUTEUR_PLATEFORME_DP_DEFAUT = 10;
+    private static final int MAX_PLACEMENT_ATTEMPTS_DEFAUT = 500;
 
-    private static final int HAUTEUR_MAX_SAUT_PERSONNAGE_DP = 150;
+    private static final int HAUTEUR_MAX_SAUT_PERSONNAGE_DP = 35;
     private static final int PORTEE_HORIZONTALE_MAX_SAUT_PERSONNAGE_DP = 120;
-    private static final int OFFSET_Y_PREMIERE_PLATEFORME_DP = 50;
+    private static final int OFFSET_Y_PREMIERE_PLATEFORME_DP = 0;
     private static final int ESPACEMENT_VERTICAL_MIN_DP = 80;
 
     private List<ImageView> existingPlatforms;

@@ -14,6 +14,7 @@ import android.util.Log;
 import android.view.View;
 import android.view.animation.AlphaAnimation;
 import android.view.animation.LinearInterpolator;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
@@ -27,6 +28,7 @@ public class Level4Activity extends AppCompatActivity implements SensorEventList
     private ConstraintLayout gameLayout;
     private ImageView player;
     private ImageView backgroundImage;
+    private FrameLayout backgroundFrame;
     private TextView introTextView;
     private Handler handler = new Handler();
     private Random random = new Random();
@@ -39,6 +41,11 @@ public class Level4Activity extends AppCompatActivity implements SensorEventList
     private Handler backgroundHandler = new Handler();
     private Runnable backgroundRunnable;
     private boolean isBackgroundMoving = false;
+
+    private Handler platHandler = new Handler();
+    private Runnable platRunnable;
+    private boolean isPlatMoving = false;
+
     private float backgroundY = 0f;
     private final float BACKGROUND_SPEED = 18f; // Vitesse de défilement
 
@@ -56,13 +63,13 @@ public class Level4Activity extends AppCompatActivity implements SensorEventList
 
     // === NOUVELLES VARIABLES POUR LA PHYSIQUE (comme Level1) ===
     private float velocityY = 0;
-    private final float GRAVITY = 3f;
+    private final float GRAVITY = 4f;
     private final float TERMINAL_VELOCITY = 300f;
     private boolean isOnGround = false;
     private boolean isJumping = false;
     private float characterX, characterY;
     private int screenWidth, screenHeight;
-    private final float JUMP_FORCE = -65f;
+    private final float JUMP_FORCE = -55f;
     private long lastJumpTime = 0;
     private final long JUMP_COOLDOWN = 100;
     private ImageView startPlatform;
@@ -74,7 +81,7 @@ public class Level4Activity extends AppCompatActivity implements SensorEventList
     // Variables pour le mouvement horizontal
     private float currentTilt = 0f;
     private final float TILT_SENSITIVITY = 0.01f;
-    private final float MOVEMENT_SPEED = 1000f;
+    private final float MOVEMENT_SPEED = 200f;
     private boolean firstJump = true;
 
     @Override
@@ -106,6 +113,7 @@ public class Level4Activity extends AppCompatActivity implements SensorEventList
         gameLayout = findViewById(R.id.main);
         player = findViewById(R.id.imageView_perso);
         backgroundImage = findViewById(R.id.imageView_background);
+        backgroundFrame = findViewById(R.id.backgroundFrameLayout);
         introTextView = findViewById(R.id.introTextView);
 
         // Vérifier que toutes les vues existent
@@ -117,6 +125,9 @@ public class Level4Activity extends AppCompatActivity implements SensorEventList
         }
         if (backgroundImage == null) {
             throw new RuntimeException("backgroundImage (R.id.imageView_background) not found in layout");
+        }
+        if (backgroundFrame == null) {
+            throw new RuntimeException("backgroundFrame (R.id.frame_background) not found in layout");
         }
         if (introTextView == null) {
             throw new RuntimeException("introTextView (R.id.introTextView) not found in layout");
@@ -167,6 +178,8 @@ public class Level4Activity extends AppCompatActivity implements SensorEventList
 
         // === DÉMARRAGE DE L'ARRIÈRE-PLAN MOBILE ===
         startBackgroundMovement();
+
+        startPlatMovement();
 
         // === INITIALISATION DES PLATEFORMES ET PHYSIQUE ===
         initializeGamePhysics();
@@ -419,8 +432,57 @@ public class Level4Activity extends AppCompatActivity implements SensorEventList
         }
     }
 
+    private void startPlatMovement() {
+        if (!isPlatMoving && backgroundFrame != null) {
+            isPlatMoving = true;
+            platRunnable = new Runnable() {
+                @Override
+                public void run() {
+                    if (isPlatMoving) {
+                        // Hauteur de l'écran et de l'image de fond
+                        int screenHeight = gameLayout.getHeight();
+                        int platImageHeight = backgroundFrame.getHeight();
+
+                        // Si la hauteur n'est pas encore disponible, utiliser la hauteur de l'écran
+                        if (platImageHeight == 0) {
+                            DisplayMetrics displayMetrics = new DisplayMetrics();
+                            getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+                            platImageHeight = displayMetrics.heightPixels * 2; // Estimation
+                        }
+
+                        // Calcul du déplacement maximum possible vers le bas
+                        float maxDownMovement = platImageHeight - screenHeight;
+
+                        // Déplacer l'arrière-plan vers le BAS
+                        backgroundY += BACKGROUND_SPEED;
+
+                        // Vérifier si on a atteint la fin du défilement
+                        if (backgroundY >= maxDownMovement) {
+                            backgroundY = maxDownMovement;
+                            backgroundFrame.setTranslationY(backgroundY);
+                            isPlatMoving = false;
+                            onPlatMovementFinished();
+                            return;
+                        }
+
+                        // Appliquer le mouvement
+                        backgroundFrame.setTranslationY(backgroundY);
+
+                        // Continuer l'animation
+                        platHandler.postDelayed(this, 30);
+                    }
+                }
+            };
+            platHandler.post(platRunnable);
+        }
+    }
+
     private void onBackgroundMovementFinished() {
         System.out.println("Le background a atteint la fin !");
+    }
+
+    private void onPlatMovementFinished() {
+        System.out.println("La plateforme a atteint la fin !");
     }
 
     private void resetBackgroundPosition() {
@@ -430,11 +492,25 @@ public class Level4Activity extends AppCompatActivity implements SensorEventList
         }
         isBackgroundMoving = false;
     }
+    private void resetPlatPosition() {
+        backgroundY = 0f;
+        if (backgroundFrame != null) {
+            backgroundFrame.setTranslationY(backgroundY);
+        }
+        isPlatMoving = false;
+    }
 
     private void stopBackgroundMovement() {
         isBackgroundMoving = false;
         if (backgroundHandler != null && backgroundRunnable != null) {
             backgroundHandler.removeCallbacks(backgroundRunnable);
+        }
+    }
+
+    private void stopPlatMovement() {
+        isPlatMoving = false;
+        if (platHandler != null && platRunnable != null) {
+            platHandler.removeCallbacks(platRunnable);
         }
     }
 
@@ -444,10 +520,22 @@ public class Level4Activity extends AppCompatActivity implements SensorEventList
             backgroundHandler.removeCallbacks(backgroundRunnable);
         }
     }
+    private void pausePlatMovement() {
+        isPlatMoving = false;
+        if (platHandler != null && platRunnable != null) {
+            platHandler.removeCallbacks(platRunnable);
+        }
+    }
 
     private void resumeBackgroundMovement() {
         if (!isBackgroundMoving && gameStarted) {
             startBackgroundMovement();
+        }
+    }
+
+    private void resumePlatMovement() {
+        if (!isPlatMoving && gameStarted) {
+            startPlatMovement();
         }
     }
 
@@ -459,6 +547,7 @@ public class Level4Activity extends AppCompatActivity implements SensorEventList
             sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_GAME);
         }
         resumeBackgroundMovement();
+        resumePlatMovement();
     }
 
     @Override
@@ -471,6 +560,7 @@ public class Level4Activity extends AppCompatActivity implements SensorEventList
 
         // === PAUSE DE L'ARRIÈRE-PLAN ===
         pauseBackgroundMovement();
+        pausePlatMovement();
     }
 
     @Override
@@ -478,6 +568,7 @@ public class Level4Activity extends AppCompatActivity implements SensorEventList
         super.onDestroy();
         // === ARRÊT COMPLET DE L'ARRIÈRE-PLAN ===
         stopBackgroundMovement();
+        stopPlatMovement();
 
         // Nettoyer tous les handlers
         if (handler != null) {
