@@ -8,114 +8,261 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.os.Handler;
+import android.util.DisplayMetrics;
+import android.util.Log;
 import android.widget.ImageView;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
+import androidx.core.animation.Animator;
+import androidx.core.animation.AnimatorListenerAdapter;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class Level1Activity extends AppCompatActivity implements SensorEventListener {
-    /// screen elements
-    private ConstraintLayout gameAreaLayout;
-    private ImageView characterImageView;
+    private ImageView character;
+    private PlatformCreationHelper platformCreator;
+    private List<ImageView> platforms;
 
-    /// sensor elements to move character
+    // Variables pour la physique
+    private float velocityY = 0;
+    private final float GRAVITY = 3f;
+    private final float TERMINAL_VELOCITY = 300f;
+    private boolean isOnGround = false;
+    private boolean isJumping = false;
+
+    // Variables pour la position
+    private float characterX, characterY;
+
+    // Handler pour la boucle de jeu
+    private Handler gameHandler = new Handler();
+    private Runnable gameRunnable;
+
+    // Dimensions de l'écran
+    private int screenWidth, screenHeight;
+
+    // Variables pour le gyroscope/accéléromètre
     private SensorManager sensorManager;
     private Sensor accelerometer;
+    private float currentTilt = 0f;
+    private final float TILT_SENSITIVITY = 0.01f; // Sensibilité du mouvement
+    private final float MOVEMENT_SPEED = 1000f; // Vitesse de déplacement
 
-    /// classes helpers
-    private PlatformCreationHelper platformCreator;
-    private CharacterMovementHelper characterMovementHelper;
-    private final Handler jumpHandler = new Handler();
-    private Runnable repetitiveJumpRunnable;
-
-
-    private List<ImageView> activePlatforms = new ArrayList<>();
-    private float previousCharacterBottomY;
-
+    // Variables pour les sauts automatiques
+    private boolean autoJumpEnabled = true;
+    private final float JUMP_FORCE = -65f;
+    private long lastJumpTime = 0;
+    private final long JUMP_COOLDOWN = 100; // Cooldown en millisecondes entre sauts
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         setContentView(R.layout.activity_level1);
 
-        characterImageView = findViewById(R.id.imageView_perso);
-        gameAreaLayout = findViewById(R.id.main);
-        previousCharacterBottomY = characterImageView.getY();
+        initializeGame();
+        initializeSensors();
+        startGameLoop();
+    }
 
-        gameAreaLayout.post(() -> {
-            characterMovementHelper = new CharacterMovementHelper(characterImageView, gameAreaLayout);
-            characterMovementHelper.updateGroundY();
+    private void initializeGame() {
+        // Récupérer les dimensions de l'écran
+        DisplayMetrics displayMetrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+        screenWidth = displayMetrics.widthPixels;
+        screenHeight = displayMetrics.heightPixels;
 
-            // Initialize and use PlatformCreationHelper
-            platformCreator = new PlatformCreationHelper(Level1Activity.this, gameAreaLayout, characterImageView, findViewById(R.id.imageView_plateforme));
+        // Initialiser le personnage
+        character = findViewById(R.id.imageView_perso);
+        characterX = character.getX();
+        characterY = character.getY();
 
-            activePlatforms = platformCreator.creerPlateformes();
+        // Initialiser les plateformes
+        platformCreator = new PlatformCreationHelper(Level1Activity.this, findViewById(R.id.main), character, findViewById(R.id.imageView_plateforme));
 
-            // repeat jump
-            repetitiveJumpRunnable = new Runnable() {
-                @Override
-                public void run() {
-                    if (characterMovementHelper != null && !characterMovementHelper.getIsJumping()) {
-                        characterMovementHelper.performJump();
-                    }
-                    checkCollisions();
-                    jumpHandler.postDelayed(this, 0);
-                }
-            };
-            jumpHandler.post(repetitiveJumpRunnable);
-        });
+        platforms = platformCreator.creerPlateformes();
+    }
 
+    private void initializeSensors() {
         sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
-        if (sensorManager != null) {
-            accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+
+        if (accelerometer != null) {
+            sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_GAME);
+        } else {
+            Log.w("Game", "Accéléromètre non disponible");
         }
     }
-    boolean beginning = true;
-    private void checkCollisions() {
-        if (characterImageView == null || activePlatforms == null || activePlatforms.isEmpty() || characterMovementHelper == null) {
-            return;
+
+    @Override
+    public void onSensorChanged(SensorEvent event) {
+        if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
+            // Récupérer l'inclinaison sur l'axe X (gauche/droite)
+            currentTilt = event.values[0];
+
+            // Appliquer un seuil pour éviter les mouvements involontaires
+            if (Math.abs(currentTilt) < 1.0f) {
+                currentTilt = 0;
+            }
+        }
+    }
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {
+        // Pas nécessaire pour ce cas d'usage
+    }
+
+    private void startGameLoop() {
+        gameRunnable = new Runnable() {
+            @Override
+            public void run() {
+                updateCharacter();
+                gameHandler.postDelayed(this, 16); // ~60 FPS
+            }
+        };
+        gameHandler.post(gameRunnable);
+    }
+
+    private void updateCharacter() {
+        // Mouvement horizontal basé sur l'inclinaison
+        updateHorizontalMovement();
+
+        // Appliquer la gravité si le personnage n'est pas au sol
+        if (!isOnGround) {
+            velocityY += GRAVITY;
+//            if (velocityY > TERMINAL_VELOCITY) {
+//                velocityY = TERMINAL_VELOCITY;
+//            }
         }
 
-        Rect characterRect = new Rect(
-                (int) characterImageView.getX(),
-                (int) characterImageView.getY(),
-                (int) (characterImageView.getX() + characterImageView.getWidth()),
-                (int) (characterImageView.getY() + characterImageView.getHeight())
-        );
+        // Mettre à jour la position Y
+        characterY += velocityY;
 
-        float currentCharacterBottomY = characterRect.bottom;
+        // Vérifier les collisions avec les plateformes
+        checkPlatformCollisions();
 
-        for (ImageView platform : activePlatforms) {
-            if (platform == null || platform.getVisibility() != ImageView.VISIBLE) continue;
+        // Gestion des sauts automatiques
+        handleAutoJump();
 
-            Rect platformRect = new Rect(
-                    (int) platform.getX(),
-                    (int) platform.getY(),
-                    (int) (platform.getX() + platform.getWidth()),
-                    (int) (platform.getY() + platform.getHeight())
-            );
+        // Vérifier si le personnage tombe dans le vide
+        checkFallIntoVoid();
 
-            boolean horizontalOverlap = characterRect.left < platformRect.right &&
-                    characterRect.right > platformRect.left;
+        // Appliquer la nouvelle position
+        character.setX(characterX);
+        character.setY(characterY);
+    }
 
-            if (horizontalOverlap) {
+    private void updateHorizontalMovement() {
+        // Calculer le mouvement basé sur l'inclinaison
+        float movement = -currentTilt * TILT_SENSITIVITY * MOVEMENT_SPEED;
+        characterX += movement;
 
-                boolean isFallingOnPlatform =
-                                        beginning ||
-                                                (previousCharacterBottomY <= platformRect.top &&
-                                currentCharacterBottomY >= platformRect.top &&
-                                currentCharacterBottomY <= platformRect.top + (platform.getHeight() / 2.0f));
+        // Vérifier les limites de l'écran
+        if (characterX < 0) {
+            characterX = 0;
+        } else if (characterX + character.getWidth() > screenWidth) {
+            characterX = screenWidth - character.getWidth();
+        }
+    }
 
-                if (isFallingOnPlatform) {
-                    beginning =false;
-                    characterMovementHelper.landOnPlatform(platformRect.top);
+    private void handleAutoJump() {
+        if (!autoJumpEnabled) return;
+
+        long currentTime = System.currentTimeMillis();
+
+        // Si le personnage vient d'atterrir et que le cooldown est passé
+        if (isOnGround && !isJumping && (currentTime - lastJumpTime) > JUMP_COOLDOWN) {
+            performJump();
+            lastJumpTime = currentTime;
+        }
+    }
+
+    private void performJump() {
+        velocityY = JUMP_FORCE;
+        isOnGround = false;
+        isJumping = true;
+    }
+
+    private void checkPlatformCollisions() {
+        isOnGround = false;
+
+        for (ImageView platform : platforms) {
+            if (isCollidingWithPlatform(platform)) {
+                // Si le personnage tombe et touche le dessus de la plateforme
+                if (velocityY > 0 &&
+                        characterY + character.getHeight() >= platform.getY() &&
+                        characterY + character.getHeight() <= platform.getY() + platform.getHeight()) {
+
+                    // Placer le personnage sur la plateforme
+                    characterY = platform.getY() - character.getHeight();
+                    velocityY = 0;
+                    isOnGround = true;
+                    isJumping = false;
                     break;
                 }
             }
         }
-        previousCharacterBottomY = currentCharacterBottomY;
+    }
+
+    private boolean isCollidingWithPlatform(ImageView platform) {
+        // Récupérer les dimensions et positions
+        float charLeft = characterX;
+        float charRight = characterX + character.getWidth();
+        float charTop = characterY;
+        float charBottom = characterY + character.getHeight();
+
+        float platLeft = platform.getX();
+        float platRight = platform.getX() + platform.getWidth();
+        float platTop = platform.getY();
+        float platBottom = platform.getY() + platform.getHeight();
+
+        // Vérifier la collision (intersection des rectangles)
+        return charLeft < platRight &&
+                charRight > platLeft &&
+                charTop < platBottom &&
+                charBottom > platTop;
+    }
+
+    private void checkFallIntoVoid() {
+        // Si le personnage tombe en dessous de l'écran
+        if (characterY > screenHeight + 100) {
+            handleFallIntoVoid();
+        }
+    }
+
+    private void handleFallIntoVoid() {
+        Log.d("Game", "Le personnage est tombé dans le vide !");
+        respawnCharacter();
+    }
+
+    private void respawnCharacter() {
+        // Remettre le personnage à sa position de départ
+        characterX = 100;
+        characterY = 100;
+        velocityY = 0;
+        isOnGround = false;
+        isJumping = false;
+        lastJumpTime = 0; // Reset du timer de saut
+
+        // Appliquer immédiatement la position
+        character.setX(characterX);
+        character.setY(characterY);
+
+        //Toast.makeText(this, "Respawn !", Toast.LENGTH_SHORT).show();
+    }
+
+    // Méthodes pour ajuster les paramètres en temps réel
+    public void setTiltSensitivity(float sensitivity) {
+        // Vous pouvez appeler cette méthode pour ajuster la sensibilité
+        // TILT_SENSITIVITY = sensitivity; (rendre la variable non-final)
+    }
+
+    public void setAutoJumpEnabled(boolean enabled) {
+        autoJumpEnabled = enabled;
+    }
+
+    public void setJumpCooldown(long cooldown) {
+        // JUMP_COOLDOWN = cooldown; (rendre la variable non-final)
     }
 
     @Override
@@ -124,46 +271,27 @@ public class Level1Activity extends AppCompatActivity implements SensorEventList
         if (accelerometer != null) {
             sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_GAME);
         }
-
-        // Reprendre la boucle de jeu si elle avait été arrêtée
-        if (repetitiveJumpRunnable != null && gameAreaLayout.getWidth() > 0) { // S'assurer que le layout est prêt
-            // Vider les anciens messages au cas où onPause puis onResume rapidement
-            jumpHandler.removeCallbacks(repetitiveJumpRunnable);
-            jumpHandler.post(repetitiveJumpRunnable);
-        }
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        // stop listening to sensor when activity is paused
-        if (sensorManager != null) {
-            sensorManager.unregisterListener(this);
-        }
-
-        // cancel animation when activity is paused
-        if (characterMovementHelper != null) {
-            characterMovementHelper.cancelAnimations();
-        }
-        // stop jumps when activity is paused
-        if (jumpHandler != null && repetitiveJumpRunnable != null) {
-            jumpHandler.removeCallbacks(repetitiveJumpRunnable);
-        }
-
-        previousCharacterBottomY = -1;
+        sensorManager.unregisterListener(this);
     }
 
     @Override
-    public void onSensorChanged(SensorEvent event) {
-
-        if (characterMovementHelper != null) {
-            int rotation = getWindowManager().getDefaultDisplay().getRotation();
-            characterMovementHelper.handleSensorEvent(event, rotation); // call character class method
+    protected void onDestroy() {
+        super.onDestroy();
+        // Arrêter la boucle de jeu
+        if (gameHandler != null && gameRunnable != null) {
+            gameHandler.removeCallbacks(gameRunnable);
         }
+        // Désinscrire les sensors
+        sensorManager.unregisterListener(this);
     }
 
-    /// @summary method not used in this version, present for the SensorEventListener interface
-    @Override
-    public void onAccuracyChanged(Sensor sensor, int accuracy) {
-    }
+    // Getters utiles
+    public boolean isAutoJumpEnabled() { return autoJumpEnabled; }
+    public float getCurrentTilt() { return currentTilt; }
+    public boolean isCharacterOnGround() { return isOnGround; }
 }

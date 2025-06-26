@@ -23,6 +23,7 @@ public class PlatformCreationHelper {
     private static final int HAUTEUR_MAX_SAUT_PERSONNAGE_DP = 150;
     private static final int PORTEE_HORIZONTALE_MAX_SAUT_PERSONNAGE_DP = 120;
     private static final int OFFSET_Y_PREMIERE_PLATEFORME_DP = 50;
+    private static final int ESPACEMENT_VERTICAL_MIN_DP = 80; // Nouvel espacement minimum
 
     private List<ImageView> existingPlatforms;
     private Random random;
@@ -76,6 +77,8 @@ public class PlatformCreationHelper {
         int porteeHorizontaleMaxSautPx = (int) (PORTEE_HORIZONTALE_MAX_SAUT_PERSONNAGE_DP * scale + 0.5f);
         int offsetYPremierePlateformePx = (int) (OFFSET_Y_PREMIERE_PLATEFORME_DP * scale + 0.5f);
 
+        int espacementVerticalMinPx = (int) (ESPACEMENT_VERTICAL_MIN_DP * scale + 0.5f);
+
         Rect newPlatformRect = new Rect();
         // loop for platforms creation
         for (int i = 0; i < nombrePlateformes && (i == 0 || newPlatformRect.top >= 600); i++) {
@@ -126,9 +129,11 @@ public class PlatformCreationHelper {
                     }
                     // calculate y position reachable and higher than previous platform
                     int minY_accessible = refY - hauteurMaxSautPx;
-                    int maxY_accessible = refY - hauteurPlateformePx - 5; // minus 5 to avoid overlapse with previous platform
-
-                    randomY = random.nextInt(maxY_accessible - minY_accessible + 1) + minY_accessible;
+                    int maxY_accessible = refY - hauteurPlateformePx - espacementVerticalMinPx;
+                    if (maxY_accessible < minY_accessible) {
+                        maxY_accessible = minY_accessible;
+                    }
+                    randomY = random.nextInt(Math.max(1, maxY_accessible - minY_accessible + 1)) + minY_accessible;
                 }
 
                 // Final values to avoid offscreen coordinates
