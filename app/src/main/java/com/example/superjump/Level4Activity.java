@@ -88,8 +88,12 @@ public class Level4Activity extends AppCompatActivity implements SensorEventList
 
         // === INITIALISATION DU CAPTEUR ===
         sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
-        if (sensorManager != null) {
-            accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+
+        if (accelerometer != null) {
+            sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_GAME);
+        } else {
+            Log.w("Game", "Accéléromètre non disponible");
         }
 
         // Attendre que le layout soit prêt avant d'afficher le texte
