@@ -29,7 +29,7 @@ public class Level4Activity extends AppCompatActivity implements SensorEventList
     private Handler handler = new Handler();
     private Random random = new Random();
 
-    private final int ENEMY_SIZE = 150;
+    private final int ENEMY_SIZE = 200;
     private final int ENEMY_COUNT = 5;
     private final int SPAWN_DELAY = 1500;
 
