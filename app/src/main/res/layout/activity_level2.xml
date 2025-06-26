@@ -23,16 +23,16 @@
             android:translationY="-2400dp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:srcCompat="@drawable/bgniveau1" />
+            app:srcCompat="@drawable/bgniveau2" />
 
         <ImageView
             android:id="@+id/imageView_perso"
-            android:layout_width="100dp"
-            android:layout_height="100dp"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
             android:layout_gravity="bottom|center"
             android:contentDescription="@string/character_image"
             android:elevation="4dp"
-            android:translationY="-35dp"
+            android:translationY="0dp"
             android:visibility="visible"
             app:layout_constraintBottom_toTopOf="@id/imageView_plateforme"
             app:srcCompat="@drawable/personnage" />

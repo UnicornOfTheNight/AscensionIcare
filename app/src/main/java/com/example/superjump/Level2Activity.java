@@ -27,7 +27,7 @@ public class Level2Activity extends AppCompatActivity implements SensorEventList
 
     // Variables pour la physique
     private float velocityY = 0;
-    private final float GRAVITY = 3f;
+    private final float GRAVITY = 4f;
     private final float TERMINAL_VELOCITY = 300f;
     private boolean isOnGround = false;
     private boolean isJumping = false;
@@ -52,7 +52,7 @@ public class Level2Activity extends AppCompatActivity implements SensorEventList
 
     // Variables pour les sauts automatiques
     private boolean autoJumpEnabled = true;
-    private final float JUMP_FORCE = -65f;
+    private final float JUMP_FORCE = -55f;
     private long lastJumpTime = 0;
     private final long JUMP_COOLDOWN = 100; // Cooldown en millisecondes entre sauts
 
