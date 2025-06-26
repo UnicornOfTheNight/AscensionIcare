@@ -2,7 +2,6 @@ package com.example.superjump;
 
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.Rect;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -12,24 +11,17 @@ import android.os.Handler;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.View;
-import android.view.animation.LinearInterpolator;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.constraintlayout.widget.ConstraintLayout;
-import androidx.core.animation.Animator;
-import androidx.core.animation.AnimatorListenerAdapter;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 
 public class Level1Activity extends AppCompatActivity implements SensorEventListener {
     private ImageView character;
     private ImageView startPlatform;
-    private ImageView backgroundImage;
     private PlatformCreationHelper platformCreator;
     private List<ImageView> platforms;
 
@@ -77,23 +69,6 @@ public class Level1Activity extends AppCompatActivity implements SensorEventList
     private long lastJumpTime = 0;
     private final long JUMP_COOLDOWN = 100; // Cooldown en millisecondes entre sauts
 
-    // === NOUVELLES VARIABLES POUR LES ENNEMIS ===
-    private Handler enemyHandler = new Handler();
-    private Random random = new Random();
-    private final int ENEMY_SIZE = 200;
-    private final int ENEMY_COUNT = 3; // Moins d'ennemis pour Level1
-    private final int SPAWN_DELAY = 2000; // Plus lent que Level4
-    private boolean gameStarted = false;
-
-    // === VARIABLES POUR L'ARRIÈRE-PLAN MOBILE ===
-    private Handler backgroundHandler = new Handler();
-    private Runnable backgroundRunnable;
-    private boolean isBackgroundMoving = false;
-    private float backgroundY = 0f;
-    private final float BACKGROUND_SPEED = 10f; // Plus lent que Level4
-
-    boolean isPaused = false;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -109,14 +84,6 @@ public class Level1Activity extends AppCompatActivity implements SensorEventList
         initializeGame();
         initializeSensors();
         startGameLoop();
-
-        // === DÉMARRER LE JEU APRÈS UN COURT DÉLAI ===
-        gameHandler.postDelayed(() -> {
-            gameStarted = true;
-            startBackgroundMovement();
-            // Commencer les ennemis après 3 secondes
-            gameHandler.postDelayed(this::startEnemySpawning, 3000);
-        }, 1000);
     }
 
     private void initializePauseElements() {
@@ -133,6 +100,7 @@ public class Level1Activity extends AppCompatActivity implements SensorEventList
         });
 
         resumeButton.setOnClickListener(v -> {
+
             isPaused = false;
             resumeTimer();
             resumeGame();
@@ -207,7 +175,6 @@ public class Level1Activity extends AppCompatActivity implements SensorEventList
         isManuallyPaused = false;
         pauseMenu.setVisibility(View.GONE);
         pauseButton.setVisibility(View.VISIBLE);
-        resumeBackgroundMovement();
     }
 
     private void initializeGame() {
@@ -217,10 +184,9 @@ public class Level1Activity extends AppCompatActivity implements SensorEventList
         screenWidth = displayMetrics.widthPixels;
         screenHeight = displayMetrics.heightPixels;
 
-        // Initialiser le personnage, la plateforme de départ et le background
+        // Initialiser le personnage et la plateforme de départ
         character = findViewById(R.id.imageView_perso);
         startPlatform = findViewById(R.id.imageView_plateforme);
-        backgroundImage = findViewById(R.id.imageView_background); // Assurez-vous que cet ID existe dans votre layout
 
         // Attendre que les vues soient mesurées avant de positionner le personnage
         character.post(() -> {
@@ -271,163 +237,11 @@ public class Level1Activity extends AppCompatActivity implements SensorEventList
         // Pas nécessaire pour ce cas d'usage
     }
 
-    // === MÉTHODES POUR L'ARRIÈRE-PLAN MOBILE ===
-    private void startBackgroundMovement() {
-        if (!isBackgroundMoving && backgroundImage != null) {
-            isBackgroundMoving = true;
-            backgroundRunnable = new Runnable() {
-                @Override
-                public void run() {
-                    if (isBackgroundMoving && !isPaused) {
-                        // Hauteur de l'écran et de l'image de fond
-                        int screenHeight = findViewById(R.id.main).getHeight();
-                        int backgroundImageHeight = backgroundImage.getHeight();
-
-                        // Calcul du déplacement maximum possible vers le bas
-                        float maxDownMovement = backgroundImageHeight - screenHeight;
-
-                        // Déplacer l'arrière-plan vers le BAS
-                        backgroundY += BACKGROUND_SPEED;
-
-                        // Vérifier si on a atteint la fin du défilement
-                        if (backgroundY >= maxDownMovement) {
-                            backgroundY = maxDownMovement;
-                            backgroundImage.setTranslationY(backgroundY);
-                            isBackgroundMoving = false;
-                            onBackgroundMovementFinished();
-                            return;
-                        }
-
-                        // Appliquer le mouvement
-                        backgroundImage.setTranslationY(backgroundY);
-
-                        // Continuer l'animation
-                        backgroundHandler.postDelayed(this, 50);
-                    }
-                }
-            };
-            backgroundHandler.post(backgroundRunnable);
-        }
-    }
-
-    private void onBackgroundMovementFinished() {
-        Log.d("Game", "Le background a atteint la fin !");
-        // Ici vous pouvez ajouter des actions spéciales quand le background s'arrête
-    }
-
-    private void pauseBackgroundMovement() {
-        isBackgroundMoving = false;
-        if (backgroundHandler != null && backgroundRunnable != null) {
-            backgroundHandler.removeCallbacks(backgroundRunnable);
-        }
-    }
-
-    private void resumeBackgroundMovement() {
-        if (!isBackgroundMoving && gameStarted && !isPaused) {
-            startBackgroundMovement();
-        }
-    }
-
-    private void stopBackgroundMovement() {
-        isBackgroundMoving = false;
-        if (backgroundHandler != null && backgroundRunnable != null) {
-            backgroundHandler.removeCallbacks(backgroundRunnable);
-        }
-    }
-
-    // === MÉTHODES POUR LES ENNEMIS ===
-    private void startEnemySpawning() {
-        if (gameStarted) {
-            spawnEnemies();
-        }
-    }
-
-    private void spawnEnemies() {
-        for (int i = 0; i < ENEMY_COUNT; i++) {
-            enemyHandler.postDelayed(this::createEnemy, i * SPAWN_DELAY);
-        }
-    }
-
-    private void createEnemy() {
-        if (!gameStarted || isPaused) return;
-
-        ImageView enemy = new ImageView(this);
-        enemy.setImageResource(R.drawable.evil); // Assurez-vous que cette ressource existe
-        ConstraintLayout.LayoutParams params = new ConstraintLayout.LayoutParams(ENEMY_SIZE, ENEMY_SIZE);
-
-        ConstraintLayout gameLayout = findViewById(R.id.main);
-        int maxWidth = gameLayout.getWidth() - ENEMY_SIZE;
-        if (maxWidth > 0) {
-            int randomX = random.nextInt(maxWidth);
-            enemy.setX(randomX);
-            enemy.setY(0);
-            enemy.setLayoutParams(params);
-
-            gameLayout.addView(enemy);
-            animateEnemy(enemy);
-        }
-    }
-
-    private void animateEnemy(ImageView enemy) {
-        int screenHeight = findViewById(R.id.main).getHeight();
-        enemy.animate()
-                .translationY(screenHeight)
-                .setDuration(5000 + random.nextInt(2000)) // Plus lent que Level4
-                .setInterpolator(new LinearInterpolator())
-                .withEndAction(() -> {
-                    ConstraintLayout gameLayout = findViewById(R.id.main);
-                    gameLayout.removeView(enemy);
-                    // Recréer un ennemi après un délai
-                    enemyHandler.postDelayed(this::createEnemy, SPAWN_DELAY);
-                })
-                .start();
-
-        checkCollisionRepeatedly(enemy);
-    }
-
-    private void checkCollisionRepeatedly(ImageView enemy) {
-        Runnable check = new Runnable() {
-            @Override
-            public void run() {
-                if (enemy.getParent() == null || isPaused) return;
-
-                if (checkCollision(character, enemy)) {
-                    // Game Over - rediriger vers GameOverActivity ou respawn
-                    handleEnemyCollision();
-                } else {
-                    enemyHandler.postDelayed(this, 100);
-                }
-            }
-        };
-        enemyHandler.post(check);
-    }
-
-    private void handleEnemyCollision() {
-        Log.d("Game", "Collision avec un ennemi !");
-        // Option 1: Game Over
-        // Intent intent = new Intent(Level1Activity.this, GameOverActivity.class);
-        // startActivity(intent);
-        // finish();
-
-        // Option 2: Respawn (plus adapté pour Level1)
-        respawnCharacter();
-    }
-
-    private boolean checkCollision(View v1, View v2) {
-        Rect r1 = new Rect();
-        Rect r2 = new Rect();
-        v1.getHitRect(r1);
-        v2.getHitRect(r2);
-        return Rect.intersects(r1, r2);
-    }
-
     private void startGameLoop() {
         gameRunnable = new Runnable() {
             @Override
             public void run() {
-                if (!isPaused) {
-                    updateCharacter();
-                }
+                updateCharacter();
                 gameHandler.postDelayed(this, 16); // ~60 FPS
             }
         };
@@ -441,6 +255,9 @@ public class Level1Activity extends AppCompatActivity implements SensorEventList
         // Appliquer la gravité si le personnage n'est pas au sol
         if (!isOnGround) {
             velocityY += GRAVITY;
+//            if (velocityY > TERMINAL_VELOCITY) {
+//                velocityY = TERMINAL_VELOCITY;
+//            }
         }
 
         // Mettre à jour la position Y
@@ -488,9 +305,11 @@ public class Level1Activity extends AppCompatActivity implements SensorEventList
     }
 
     private void performJump() {
-        velocityY = JUMP_FORCE;
-        isOnGround = false;
-        isJumping = true;
+            velocityY = JUMP_FORCE;
+            isOnGround = false;
+            isJumping = true;
+
+
     }
 
     private void checkPlatformCollisions() {
@@ -558,15 +377,22 @@ public class Level1Activity extends AppCompatActivity implements SensorEventList
         // Appliquer immédiatement la position
         character.setX(characterX);
         character.setY(characterY);
+
+        //Toast.makeText(this, "Respawn !", Toast.LENGTH_SHORT).show();
     }
 
     // Méthodes pour ajuster les paramètres en temps réel
     public void setTiltSensitivity(float sensitivity) {
         // Vous pouvez appeler cette méthode pour ajuster la sensibilité
+        // TILT_SENSITIVITY = sensitivity; (rendre la variable non-final)
     }
 
     public void setAutoJumpEnabled(boolean enabled) {
         autoJumpEnabled = enabled;
+    }
+
+    public void setJumpCooldown(long cooldown) {
+        // JUMP_COOLDOWN = cooldown; (rendre la variable non-final)
     }
 
     @Override
@@ -577,16 +403,15 @@ public class Level1Activity extends AppCompatActivity implements SensorEventList
             pauseMenu.setElevation(6);
             pauseButton.setVisibility(View.GONE);
             isPaused = true;
+
         } else {
             // Pause automatique (changement d'activité)
             pauseTimer();
-            isPaused = true;
         }
-
-        // === PAUSE DES NOUVELLES FONCTIONNALITÉS ===
-        pauseBackgroundMovement();
         sensorManager.unregisterListener(this);
     }
+
+    boolean isPaused = false;
 
     @Override
     protected void onResume() {
@@ -595,8 +420,8 @@ public class Level1Activity extends AppCompatActivity implements SensorEventList
             pauseMenu.setVisibility(View.GONE);
             pauseButton.setVisibility(View.VISIBLE);
             resumeTimer();
-            isPaused = false;
-            resumeBackgroundMovement();
+
+            Log.d("AAA", "test");
         }
         if (accelerometer != null) {
             sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_GAME);
@@ -607,20 +432,10 @@ public class Level1Activity extends AppCompatActivity implements SensorEventList
     protected void onDestroy() {
         super.onDestroy();
         stopTimer();
-
-        // === ARRÊT DES NOUVELLES FONCTIONNALITÉS ===
-        stopBackgroundMovement();
-
         // Arrêter la boucle de jeu
         if (gameHandler != null && gameRunnable != null) {
             gameHandler.removeCallbacks(gameRunnable);
         }
-
-        // Arrêter les ennemis
-        if (enemyHandler != null) {
-            enemyHandler.removeCallbacksAndMessages(null);
-        }
-
         // Désinscrire les sensors
         sensorManager.unregisterListener(this);
     }
