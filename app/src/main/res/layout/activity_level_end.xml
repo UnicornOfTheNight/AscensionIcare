@@ -17,7 +17,9 @@
         android:textSize="24sp"
         android:textStyle="bold"
         android:textColor="#FFFFFF"
-        android:layout_marginBottom="40dp" />
+        android:layout_marginBottom="40dp"
+        android:fontFamily="@font/goldenagenoire"/>
+
 
     <!-- Bouton Rejouer -->
     <Button
@@ -28,7 +30,9 @@
         android:background="#AAFFFFFF"
         android:textColor="#000000"
         android:elevation="4dp"
-        android:layout_marginBottom="16dp" />
+        android:layout_marginBottom="16dp"
+        android:textStyle="bold"
+        android:fontFamily="@font/goldenagenoire"/>
 
     <!-- Bouton Accueil -->
     <Button
@@ -38,5 +42,7 @@
         android:text="Accueil"
         android:background="#AAFFFFFF"
         android:textColor="#000000"
-        android:elevation="4dp" />
+        android:elevation="4dp"
+        android:textStyle="bold"
+        android:fontFamily="@font/goldenagenoire"/>
 </LinearLayout>
