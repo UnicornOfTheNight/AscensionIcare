@@ -62,42 +62,34 @@
             android:layout_height="wrap_content"
             android:gravity="center"
             android:orientation="vertical"
-            tools:visibility="gone">
+            tools:visibility="visible">
 
             <Button
                 android:id="@+id/bt_nvx1"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:fontFamily="@font/goldenage"
                 android:text="@string/niveau_1"
-                android:textStyle="bold"
-                android:fontFamily="@font/goldenage"/>
+                android:textStyle="bold" />
 
             <Button
                 android:id="@+id/bt_nvx2"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
+                android:fontFamily="@font/goldenage"
                 android:text="@string/niveau_2"
-                android:textStyle="bold"
-                android:fontFamily="@font/goldenage"/>
+                android:textStyle="bold" />
 
             <Button
                 android:id="@+id/bt_nvx3"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
+                android:fontFamily="@font/goldenage"
                 android:text="@string/niveau_3"
-                android:textStyle="bold"
-                android:fontFamily="@font/goldenage"/>
+                android:textStyle="bold" />
 
-            <Button
-                android:id="@+id/bt_nvx4"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="@string/niveau_4"
-                android:textStyle="bold"
-                android:fontFamily="@font/goldenage"/>
         </LinearLayout>
 
         <!-- Container for scores elements -->

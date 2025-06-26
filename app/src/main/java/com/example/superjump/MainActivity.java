@@ -6,6 +6,7 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.View;
@@ -54,41 +55,68 @@ public class MainActivity extends AppCompatActivity {
             return insets;
         });
 
-        // initialize elements
-        tabLayoutMenu = findViewById(R.id.tabLayout_menu);
-        layoutLevelsButtons = findViewById(R.id.layout_levels_buttons);
-        layoutScoresButtons = findViewById(R.id.layout_scores_buttons);
-        textArea_scores = findViewById(R.id.txt_scores);
-
-        boolean sonActive = loadSoundPreference();
-        switch_son.setChecked(sonActive);
-
-        // show play tab item elements by default
-        updateButtonVisibility(0);
-
+//        // initialize elements
+//        tabLayoutMenu = findViewById(R.id.tabLayout_menu);
+//        layoutLevelsButtons = findViewById(R.id.layout_levels_buttons);
+//        layoutScoresButtons = findViewById(R.id.layout_scores_buttons);
+//        textArea_scores = findViewById(R.id.txt_scores);
+//
+//        boolean sonActive = loadSoundPreference();
+//        switch_son.setChecked(sonActive);
+//
+//        // show play tab item elements by default
+       // updateButtonVisibility(0);
+//
         // listeners for tab activity
-        tabLayoutMenu.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
-            @Override
-            public void onTabSelected(TabLayout.Tab tab) {
-                updateButtonVisibility(tab.getPosition());
+//        tabLayoutMenu.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
+//            @Override
+//            public void onTabSelected(TabLayout.Tab tab) {
+//                updateButtonVisibility(tab.getPosition());
+//            }
+//
+//            @Override
+//            public void onTabUnselected(TabLayout.Tab tab) {
+//
+//            }
+//
+//            @Override
+//            public void onTabReselected(TabLayout.Tab tab) {
+//
+//            }
+//
+//        });
+
+//        int tabToOpen = getIntent().getIntExtra("goToTab", -1);
+//        if (tabToOpen != -1) {
+//            tabLayoutMenu.selectTab(tabLayoutMenu.getTabAt(tabToOpen));
+//        }
+
+        findViewById(R.id.bt_nvx1).setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                Intent homeIntent = new Intent(MainActivity.this, Level1Activity.class);
+                homeIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                startActivity(homeIntent);
+                finish();
             }
-
-            @Override
-            public void onTabUnselected(TabLayout.Tab tab) {
-
-            }
-
-            @Override
-            public void onTabReselected(TabLayout.Tab tab) {
-
-            }
-
         });
 
-        int tabToOpen = getIntent().getIntExtra("goToTab", -1);
-        if (tabToOpen != -1) {
-            tabLayoutMenu.selectTab(tabLayoutMenu.getTabAt(tabToOpen));
-        }
+        findViewById(R.id.bt_nvx2).setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                Intent homeIntent = new Intent(MainActivity.this, Level2Activity.class);
+                homeIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                startActivity(homeIntent);
+                finish();
+            }
+        });
+
+        findViewById(R.id.bt_nvx3).setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                Intent homeIntent = new Intent(MainActivity.this,Level4Activity.class);
+                homeIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                startActivity(homeIntent);
+                finish();
+            }
+        });
     }
 
 
