@@ -6,7 +6,7 @@
     android:orientation="vertical"
     android:gravity="center"
     android:padding="24dp"
-    android:background="@drawable/back1">
+    android:background="@drawable/bgrouge">
 
     <!-- Score affiché -->
     <TextView
@@ -39,10 +39,10 @@
         android:id="@+id/buttonHome"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Accueil"
-        android:background="#AAFFFFFF"
-        android:textColor="#000000"
+        android:background="#AAF6F6F6"
         android:elevation="4dp"
-        android:textStyle="bold"
-        android:fontFamily="@font/goldenagenoire"/>
+        android:fontFamily="@font/goldenagenoire"
+        android:text="Accueil"
+        android:textColor="#040404"
+        android:textStyle="bold" />
 </LinearLayout>
