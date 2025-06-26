@@ -2,7 +2,6 @@ package com.example.superjump;
 
 import android.content.Context;
 import android.graphics.Rect;
-import android.util.DisplayMetrics;
 import android.util.Log;
 import android.widget.ImageView;
 import androidx.constraintlayout.widget.ConstraintLayout;
@@ -15,15 +14,16 @@ public class PlatformCreationHelper {
     private ConstraintLayout gameAreaLayout;
     private ImageView characterImageView;
 
-    // platforms constants
-    private static final int NOMBRE_PLATEFORMES_DEFAUT = 10;
-    private static final int LARGEUR_PLATEFORME_DP_DEFAUT = 75; //obtenir les dp crees par gabin
+    // platforms constantsS
+    private static final int NOMBRE_PLATEFORMES_DEFAUT = 6;
+    private static final int LARGEUR_PLATEFORME_DP_DEFAUT = 80; //obtenir les dp crees par gabin
     private static final int HAUTEUR_PLATEFORME_DP_DEFAUT = 25; //obtenir les dp crees par gabin
     private static final int MAX_PLACEMENT_ATTEMPTS_DEFAUT = 50;
 
     private static final int HAUTEUR_MAX_SAUT_PERSONNAGE_DP = 150;
     private static final int PORTEE_HORIZONTALE_MAX_SAUT_PERSONNAGE_DP = 120;
     private static final int OFFSET_Y_PREMIERE_PLATEFORME_DP = 50;
+    private static final int ESPACEMENT_VERTICAL_MIN_DP = 80; // Nouvel espacement minimum
 
     private List<ImageView> existingPlatforms;
     private Random random;
@@ -32,12 +32,13 @@ public class PlatformCreationHelper {
     /// @param context Context of the activity
     /// @param gameAreaLayout ConstraintLayout of the game area
     /// @param characterImageView ImageView of the character
-    public PlatformCreationHelper(Context context, ConstraintLayout gameAreaLayout, ImageView characterImageView) {
+    public PlatformCreationHelper(Context context, ConstraintLayout gameAreaLayout, ImageView characterImageView, ImageView startPlatform) {
         this.context = context;
         this.gameAreaLayout = gameAreaLayout;
         this.characterImageView = characterImageView;
         this.existingPlatforms = new ArrayList<>();
         this.random = new Random();
+        this.existingPlatforms.add(startPlatform);
     }
 
     /// @summary create platforms function
@@ -76,12 +77,13 @@ public class PlatformCreationHelper {
         int porteeHorizontaleMaxSautPx = (int) (PORTEE_HORIZONTALE_MAX_SAUT_PERSONNAGE_DP * scale + 0.5f);
         int offsetYPremierePlateformePx = (int) (OFFSET_Y_PREMIERE_PLATEFORME_DP * scale + 0.5f);
 
-        // loop for platforms creation
+        int espacementVerticalMinPx = (int) (ESPACEMENT_VERTICAL_MIN_DP * scale + 0.5f);
 
         Rect newPlatformRect = new Rect();
-        for (int i = 0; i < nombrePlateformes && (i == 0 || newPlatformRect.top >= 400); i++) {
-            Log.i("taille","rect top " + newPlatformRect.top);
+        // loop for platforms creation
+        for (int i = 0; i < nombrePlateformes && (i == 0 || newPlatformRect.top >= 600); i++) {
             ImageView platformImageView = new ImageView(context);
+            platformImageView.setElevation(0);
             platformImageView.setImageResource(R.drawable.plateforme_v1);
             ConstraintLayout.LayoutParams params = new ConstraintLayout.LayoutParams(
                     largeurPlateformePx,
@@ -128,9 +130,11 @@ public class PlatformCreationHelper {
                     }
                     // calculate y position reachable and higher than previous platform
                     int minY_accessible = refY - hauteurMaxSautPx;
-                    int maxY_accessible = refY - hauteurPlateformePx - 5; // minus 5 to avoid overlapse with previous platform
-
-                    randomY = random.nextInt(maxY_accessible - minY_accessible + 1) + minY_accessible;
+                    int maxY_accessible = refY - hauteurPlateformePx - espacementVerticalMinPx;
+                    if (maxY_accessible < minY_accessible) {
+                        maxY_accessible = minY_accessible;
+                    }
+                    randomY = random.nextInt(Math.max(1, maxY_accessible - minY_accessible + 1)) + minY_accessible;
                 }
 
                 // Final values to avoid offscreen coordinates
@@ -157,6 +161,7 @@ public class PlatformCreationHelper {
             if (!isOverlapping) {
                 platformImageView.setX(randomX);
                 platformImageView.setY(randomY);
+                Log.d("landOnPlatform", "position " + randomY);
                 existingPlatforms.add(platformImageView);
                 gameAreaLayout.addView(platformImageView);
             }

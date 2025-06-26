@@ -2,4 +2,11 @@
     <string name="app_name">Superjump</string>
     <string name="background_image_for_level_1">background image for level 1</string>
     <string name="character_image">character image</string>
+    <string name="jouer">Jouer</string>
+    <string name="scores">Scores</string>
+    <string name="niveau_1">Niveau 1</string>
+    <string name="niveau_2">Niveau 2</string>
+    <string name="niveau_3">Niveau 3</string>
+    <string name="niveau_4">Niveau 4</string>
+    <string name="mes_scores">Mes scores</string>
 </resources>
