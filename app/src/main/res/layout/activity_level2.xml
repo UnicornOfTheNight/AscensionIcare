@@ -29,11 +29,13 @@
         android:padding="12dp"
         android:text="00:00:00"
         android:textColor="#FFFFFF"
+
         android:textSize="18sp"
         android:textStyle="bold"
         android:typeface="monospace"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent"
+        android:fontFamily="@font/goldenage"/>
 
     <Button
         android:id="@+id/pauseButton"
@@ -41,14 +43,16 @@
         android:layout_height="wrap_content"
         android:layout_margin="16dp"
         android:layout_marginTop="208dp"
-        android:layout_marginEnd="16dp"
+        android:layout_marginEnd="18dp"
         android:backgroundTint="#8A00FF"
         android:text="Pause"
         android:textColor="#FFFFFF"
         app:layout_constraintBottom_toTopOf="@+id/backgroundImage"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/backgroundImage"
-        app:layout_constraintVertical_bias="0.78" />
+        app:layout_constraintVertical_bias="0.78"
+        android:fontFamily="@font/goldenage"
+        android:textStyle="bold"/>
 
     <!-- Menu Pause -->
     <LinearLayout
@@ -67,7 +71,9 @@
             android:layout_marginBottom="24dp"
             android:backgroundTint="#8A00FF"
             android:text="Retourner"
-            android:textColor="#FFFFFF" />
+            android:textColor="#FFFFFF"
+            android:fontFamily="@font/goldenage"
+            android:textStyle="bold"/>
 
         <Button
             android:id="@+id/quitButton"
@@ -75,7 +81,9 @@
             android:layout_height="wrap_content"
             android:backgroundTint="#FF0000"
             android:text="Quitter"
-            android:textColor="#FFFFFF" />
+            android:textColor="#FFFFFF"
+            android:fontFamily="@font/goldenage"
+            android:textStyle="bold"/>
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

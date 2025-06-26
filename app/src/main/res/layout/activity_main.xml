@@ -5,7 +5,8 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".MainActivity">
+    tools:context=".MainActivity"
+    >
 
     <com.google.android.material.tabs.TabLayout
         android:id="@+id/tabLayout_menu"
@@ -15,13 +16,14 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:tabGravity="fill"
-        app:tabMode="fixed">
+        app:tabMode="fixed"
+        app:tabTextAppearance="@style/CustomTabTextAppearance">
 
         <com.google.android.material.tabs.TabItem
             android:id="@+id/tabItem_jouer"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/jouer" />
+            android:text="@string/jouer"/>
 
         <com.google.android.material.tabs.TabItem
             android:id="@+id/tabItem_scores"
@@ -72,28 +74,36 @@
                 android:id="@+id/bt_nvx1"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/niveau_1" />
+                android:text="@string/niveau_1"
+                android:textStyle="bold"
+                android:fontFamily="@font/goldenage"/>
 
             <Button
                 android:id="@+id/bt_nvx2"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="@string/niveau_2" />
+                android:text="@string/niveau_2"
+                android:textStyle="bold"
+                android:fontFamily="@font/goldenage"/>
 
             <Button
                 android:id="@+id/bt_nvx3"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="@string/niveau_3" />
+                android:text="@string/niveau_3"
+                android:textStyle="bold"
+                android:fontFamily="@font/goldenage"/>
 
             <Button
                 android:id="@+id/bt_nvx4"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="@string/niveau_4" />
+                android:text="@string/niveau_4"
+                android:textStyle="bold"
+                android:fontFamily="@font/goldenage"/>
         </LinearLayout>
 
         <!-- Container for scores elements -->
@@ -111,7 +121,9 @@
                 android:id="@+id/txt_scores"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/mes_scores" />
+                android:text="@string/mes_scores"
+                android:textStyle="bold"
+                android:fontFamily="@font/goldenage"/>
         </LinearLayout>
 
         <!-- Container for parameters elements -->
@@ -133,13 +145,16 @@
                 android:text="@string/son"
                 android:textSize="16sp"
                 android:layout_margin="50dp"
-            />
+                android:textStyle="bold"
+                android:fontFamily="@font/goldenage"/>
 
             <Button
                 android:id="@+id/bt_effacerDonnees"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/effacer_donnees" />
+                android:text="@string/effacer_donnees"
+                android:textStyle="bold"
+                android:fontFamily="@font/goldenage"/>
 
         </LinearLayout>
 
