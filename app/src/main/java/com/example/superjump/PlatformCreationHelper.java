@@ -14,7 +14,7 @@ public class PlatformCreationHelper {
     private ConstraintLayout gameAreaLayout;
     private ImageView characterImageView;
 
-    // platforms constants
+    // platforms constantsS
     private static final int NOMBRE_PLATEFORMES_DEFAUT = 6;
     private static final int LARGEUR_PLATEFORME_DP_DEFAUT = 80; //obtenir les dp crees par gabin
     private static final int HAUTEUR_PLATEFORME_DP_DEFAUT = 25; //obtenir les dp crees par gabin

@@ -21,6 +21,7 @@ import java.util.List;
 
 public class Level1Activity extends AppCompatActivity implements SensorEventListener {
     private ImageView character;
+    private ImageView startPlatform;
     private PlatformCreationHelper platformCreator;
     private List<ImageView> platforms;
 
@@ -66,23 +67,34 @@ public class Level1Activity extends AppCompatActivity implements SensorEventList
     }
 
     private void initializeGame() {
-        // Initialiser les plateformes
-        platformCreator = new PlatformCreationHelper(Level1Activity.this, findViewById(R.id.main), character, findViewById(R.id.imageView_plateforme));
-
-        platforms = platformCreator.creerPlateformes();
-
         // Récupérer les dimensions de l'écran
         DisplayMetrics displayMetrics = new DisplayMetrics();
         getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
         screenWidth = displayMetrics.widthPixels;
         screenHeight = displayMetrics.heightPixels;
 
-        // Initialiser le personnage
+        // Initialiser le personnage et la plateforme de départ
         character = findViewById(R.id.imageView_perso);
-        characterX = character.getX();
-        characterY = character.getY();
+        startPlatform = findViewById(R.id.imageView_plateforme);
 
+        // Attendre que les vues soient mesurées avant de positionner le personnage
+        character.post(() -> {
+            // Positionner le personnage sur la plateforme de départ
+            characterX = startPlatform.getX() + (startPlatform.getWidth() - character.getWidth()) / 2;
+            characterY = startPlatform.getY() - character.getHeight();
 
+            character.setX(characterX);
+            character.setY(characterY);
+
+            isOnGround = true; // Le personnage commence sur la plateforme
+
+            Log.d("Game", "Position initiale - Character: (" + characterX + ", " + characterY +
+                    "), Platform: (" + startPlatform.getX() + ", " + startPlatform.getY() + ")");
+        });
+
+        // Initialiser les plateformes après avoir positionné le personnage
+        platformCreator = new PlatformCreationHelper(Level1Activity.this, findViewById(R.id.main), character, startPlatform);
+        platforms = platformCreator.creerPlateformes();
     }
 
     private void initializeSensors() {
@@ -113,6 +125,7 @@ public class Level1Activity extends AppCompatActivity implements SensorEventList
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
         // Pas nécessaire pour ce cas d'usage
     }
+
     private void startGameLoop() {
         gameRunnable = new Runnable() {
             @Override
@@ -237,11 +250,11 @@ public class Level1Activity extends AppCompatActivity implements SensorEventList
     }
 
     private void respawnCharacter() {
-        // Remettre le personnage à sa position de départ
-        characterX = 100;
-        characterY = 100;
+        // Remettre le personnage sur la plateforme de départ
+        characterX = startPlatform.getX() + (startPlatform.getWidth() - character.getWidth()) / 2;
+        characterY = startPlatform.getY() - character.getHeight();
         velocityY = 0;
-        isOnGround = false;
+        isOnGround = true; // Il respawn sur la plateforme
         isJumping = false;
         lastJumpTime = 0; // Reset du timer de saut
 
