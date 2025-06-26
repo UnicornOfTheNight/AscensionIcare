@@ -15,7 +15,7 @@ public class PlatformCreationHelper {
     private ImageView characterImageView;
 
     // platforms constants
-    private static final int NOMBRE_PLATEFORMES_DEFAUT = 2;
+    private static final int NOMBRE_PLATEFORMES_DEFAUT = 6;
     private static final int LARGEUR_PLATEFORME_DP_DEFAUT = 80; //obtenir les dp crees par gabin
     private static final int HAUTEUR_PLATEFORME_DP_DEFAUT = 25; //obtenir les dp crees par gabin
     private static final int MAX_PLACEMENT_ATTEMPTS_DEFAUT = 50;

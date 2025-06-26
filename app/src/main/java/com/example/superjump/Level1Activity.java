@@ -66,6 +66,11 @@ public class Level1Activity extends AppCompatActivity implements SensorEventList
     }
 
     private void initializeGame() {
+        // Initialiser les plateformes
+        platformCreator = new PlatformCreationHelper(Level1Activity.this, findViewById(R.id.main), character, findViewById(R.id.imageView_plateforme));
+
+        platforms = platformCreator.creerPlateformes();
+
         // Récupérer les dimensions de l'écran
         DisplayMetrics displayMetrics = new DisplayMetrics();
         getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
@@ -77,10 +82,7 @@ public class Level1Activity extends AppCompatActivity implements SensorEventList
         characterX = character.getX();
         characterY = character.getY();
 
-        // Initialiser les plateformes
-        platformCreator = new PlatformCreationHelper(Level1Activity.this, findViewById(R.id.main), character, findViewById(R.id.imageView_plateforme));
 
-        platforms = platformCreator.creerPlateformes();
     }
 
     private void initializeSensors() {
@@ -111,7 +113,6 @@ public class Level1Activity extends AppCompatActivity implements SensorEventList
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
         // Pas nécessaire pour ce cas d'usage
     }
-
     private void startGameLoop() {
         gameRunnable = new Runnable() {
             @Override
