@@ -34,6 +34,7 @@ public class Level1Activity extends AppCompatActivity implements SensorEventList
 
     // Variables pour la position
     private float characterX, characterY;
+    private boolean firstJump = true;
 
     // Handler pour la boucle de jeu
     private Handler gameHandler = new Handler();
@@ -65,7 +66,6 @@ public class Level1Activity extends AppCompatActivity implements SensorEventList
         initializeSensors();
         startGameLoop();
     }
-
     private void initializeGame() {
         // Récupérer les dimensions de l'écran
         DisplayMetrics displayMetrics = new DisplayMetrics();
@@ -162,8 +162,10 @@ public class Level1Activity extends AppCompatActivity implements SensorEventList
         checkFallIntoVoid();
 
         // Appliquer la nouvelle position
-        character.setX(characterX);
-        character.setY(characterY);
+        if(!firstJump){
+            character.setX(characterX);
+            character.setY(characterY);
+        }
     }
 
     private void updateHorizontalMovement() {
@@ -212,6 +214,7 @@ public class Level1Activity extends AppCompatActivity implements SensorEventList
                     velocityY = 0;
                     isOnGround = true;
                     isJumping = false;
+                    firstJump = false;
                     break;
                 }
             }
