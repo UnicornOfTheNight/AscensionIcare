@@ -6,6 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".MainActivity"
+    android:background="#7c0800"
     >
 
     <com.google.android.material.tabs.TabLayout
@@ -17,6 +18,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:tabGravity="fill"
         app:tabMode="fixed"
+        android:background="#7c0800"
         app:tabTextAppearance="@style/CustomTabTextAppearance">
 
         <com.google.android.material.tabs.TabItem

@@ -122,10 +122,11 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="#88000000"
-        android:gravity="center"
         android:elevation="6dp"
+        android:gravity="center"
         android:orientation="vertical"
-        android:visibility="gone">
+        android:visibility="invisible"
+        tools:visibility="invisible">
 
         <Button
             android:id="@+id/resumeButton"
@@ -133,18 +134,18 @@
             android:layout_height="wrap_content"
             android:layout_marginBottom="24dp"
             android:backgroundTint="#8A00FF"
+            android:elevation="6dp"
             android:fontFamily="@font/goldenage"
             android:text="Retourner"
-            android:elevation="6dp"
             android:textColor="#FFFFFF"
             android:textStyle="bold" />
 
         <Button
             android:id="@+id/quitButton"
-            android:elevation="6dp"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:backgroundTint="#FF0000"
+            android:elevation="6dp"
             android:fontFamily="@font/goldenage"
             android:text="Quitter"
             android:textColor="#FFFFFF"

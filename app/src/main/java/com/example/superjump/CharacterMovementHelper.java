@@ -23,7 +23,7 @@ public class CharacterMovementHelper {
 
     private static final float JUMP_HEIGHT = 1000f;
     private static final long JUMP_DURATION = 400;
-    private static final float MOVEMENT_SENSITIVITY = 10.0f;
+    private static final float MOVEMENT_SENSITIVITY = 5.0f;
     private static final long HORIZONTAL_ANIMATION_DURATION = 50;
 
     /// @summary Class constructor
