@@ -507,7 +507,7 @@ public class Level4Activity extends AppCompatActivity implements SensorEventList
             }
 
             if(characterY <= player.getHeight()+100) {
-                Intent homeIntent = new Intent(Level4Activity.this, GameOverActivity.class);
+                Intent homeIntent = new Intent(Level4Activity.this, GameEndActivity.class);
                 homeIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
                 startActivity(homeIntent);
                 finish();

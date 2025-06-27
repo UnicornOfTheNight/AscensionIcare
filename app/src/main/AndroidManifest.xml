@@ -3,48 +3,45 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.HIGH_SAMPLING_RATE_SENSORS" />
+
     <uses-feature
         android:name="android.hardware.sensor.accelerometer"
         android:required="true" />
+
     <application
         android:allowBackup="true"
-        android:supportsRtl="true"
         android:icon="@drawable/logoapp"
         android:label="Super Jump"
+        android:supportsRtl="true"
         android:theme="@style/Theme.AscensionIcare">
+        <activity
+            android:name=".GameEndActivity"
+            android:exported="true" />
+        <activity
+            android:name=".LevelEndActivity"
+            android:exported="true" />
+        <activity
+            android:name=".GameOverActivity"
+            android:exported="true" />
+        <activity
+            android:name=".Level1Activity"
+            android:exported="true" />
+        <activity
+            android:name=".Level2Activity"
+            android:exported="true" />
+        <activity
+            android:name=".Level4Activity"
+            android:exported="true" />
         <activity
             android:name=".MainActivity"
             android:exported="true">
-
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+        </activity>
 
-        </activity>
-        <activity
-            android:name=".Level1Activity"
-            android:exported="true">
-        </activity>
-        <activity
-            android:name=".Level2Activity"
-            android:exported="true">
-        </activity>
-        <activity
-            android:name=".Level4Activity"
-            android:exported="true">
-
-        </activity>
-        <activity
-            android:name=".LevelEndActivity"
-            android:exported="true">
-        </activity>
-        <activity
-            android:name=".GameOverActivity"
-            android:exported="true">
-
-        </activity>
     </application>
 
 </manifest>
