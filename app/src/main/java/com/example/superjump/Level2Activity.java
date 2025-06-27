@@ -171,10 +171,9 @@ public class Level2Activity extends AppCompatActivity implements SensorEventList
             character.setX(characterX);
             character.setY(characterY);
 
-            if(character.getY() >= screenHeight - character.getHeight() - 50){
+            if(characterY <= character.getHeight()+100) {
                 Intent homeIntent = new Intent(Level2Activity.this, Level4Activity.class);
                 homeIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-                homeIntent.putExtra("goToTab", 0); // si tu veux ouvrir un onglet particulier
                 startActivity(homeIntent);
                 finish();
             }

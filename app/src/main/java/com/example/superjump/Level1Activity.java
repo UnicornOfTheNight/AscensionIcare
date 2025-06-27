@@ -272,7 +272,12 @@ public class Level1Activity extends AppCompatActivity implements SensorEventList
             player.setY(characterY);
         }
 
-
+        if(characterY <= player.getHeight()+100) {
+            Intent homeIntent = new Intent(Level1Activity.this, Level2Activity.class);
+            homeIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            startActivity(homeIntent);
+            finish();
+        }
     }
 
     private void updateHorizontalMovement() {
