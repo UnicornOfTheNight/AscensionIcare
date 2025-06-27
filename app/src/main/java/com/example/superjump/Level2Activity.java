@@ -12,6 +12,8 @@ import android.os.Handler;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.widget.ImageView;
+import android.widget.TextView;
+
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.animation.Animator;
@@ -61,12 +63,19 @@ public class Level2Activity extends AppCompatActivity implements SensorEventList
     // NOUVEAU : Variable pour tracker la dernière plateforme sur laquelle le joueur a atterri
     private ImageView lastLandedPlatform = null;
 
+    private TextView timerText;
+    private Handler timerHandler;
+    private Runnable timerRunnable;
+    private long startTime;
+    private long pausedTime = 0;
+    private boolean isTimerRunning = false;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.activity_level2);
-
+        timerText = findViewById(R.id.timerText);
         initializeGame();
         initializeSensors();
         startGameLoop();
@@ -101,6 +110,9 @@ public class Level2Activity extends AppCompatActivity implements SensorEventList
         // Initialiser les plateformes après avoir positionné le personnage
         platformCreator = new PlatformCreationHelper(Level2Activity.this, findViewById(R.id.main), character, startPlatform);
         platforms = platformCreator.creerPlateformes(true);
+
+        initTimer();
+        startTimer();
     }
 
     private void initializeSensors() {
@@ -113,7 +125,44 @@ public class Level2Activity extends AppCompatActivity implements SensorEventList
             Log.w("Game", "Accéléromètre non disponible");
         }
     }
+    private void initTimer() {
+        timerHandler = new Handler();
+        timerRunnable = new Runnable() {
+            @Override
+            public void run() {
+                if (isTimerRunning) {
+                    long currentTime = System.currentTimeMillis();
+                    long elapsedTime = currentTime - startTime + pausedTime;
+                    updateTimerDisplay(elapsedTime);
+                    timerHandler.postDelayed(this, 10); // Mise à jour toutes les 10ms
+                }
+            }
+        };
+    }
 
+    private void updateTimerDisplay(long elapsedTime) {
+        int minutes = (int) (elapsedTime / 60000);
+        int seconds = (int) ((elapsedTime % 60000) / 1000);
+        int milliseconds = (int) ((elapsedTime % 1000) / 10);
+
+        String timeText = String.format("%02d:%02d:%02d", minutes, seconds, milliseconds);
+        timerText.setText(timeText);
+    }
+
+    private void startTimer() {
+        if (!isTimerRunning) {
+            startTime = System.currentTimeMillis();
+            isTimerRunning = true;
+            timerHandler.post(timerRunnable);
+        }
+    }
+
+    private void initializeScreenDimensions() {
+        DisplayMetrics displayMetrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+        screenWidth = displayMetrics.widthPixels;
+        screenHeight = displayMetrics.heightPixels;
+    }
     @Override
     public void onSensorChanged(SensorEvent event) {
         if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
@@ -173,6 +222,9 @@ public class Level2Activity extends AppCompatActivity implements SensorEventList
             character.setY(characterY);
 
             if(characterY <= character.getHeight()+100) {
+                MainActivity.scoreNvx2 = "Niveau 2 : " + timerText.getText().toString();
+
+                LevelEndActivity.score = timerText.getText().toString();
                 LevelEndActivity.toGo = Level4Activity.class;
                 Intent homeIntent = new Intent(Level2Activity.this, LevelEndActivity.class);
                 homeIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);

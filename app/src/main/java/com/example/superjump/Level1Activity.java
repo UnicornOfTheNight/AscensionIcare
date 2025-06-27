@@ -82,6 +82,13 @@ public class Level1Activity extends AppCompatActivity implements SensorEventList
     private final float MOVEMENT_SPEED = 200f;
     private boolean firstJump = true;
 
+    private TextView timerText;
+    private Handler timerHandler;
+    private Runnable timerRunnable;
+    private long startTime;
+    private long pausedTime = 0;
+    private boolean isTimerRunning = false;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -90,6 +97,8 @@ public class Level1Activity extends AppCompatActivity implements SensorEventList
         // Initialiser les vues d'abord
         initializeViews();
         initializeScreenDimensions();
+
+        timerText = findViewById(R.id.timerText);
 
         // === INITIALISATION DU CAPTEUR ===
         sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
@@ -130,7 +139,41 @@ public class Level1Activity extends AppCompatActivity implements SensorEventList
         if (introTextView == null) {
             throw new RuntimeException("introTextView (R.id.introTextView) not found in layout");
         }
+        initTimer();
+        startTimer();
         player.setY(player.getY() - 25);
+    }
+
+    private void initTimer() {
+        timerHandler = new Handler();
+        timerRunnable = new Runnable() {
+            @Override
+            public void run() {
+                if (isTimerRunning) {
+                    long currentTime = System.currentTimeMillis();
+                    long elapsedTime = currentTime - startTime + pausedTime;
+                    updateTimerDisplay(elapsedTime);
+                    timerHandler.postDelayed(this, 10); // Mise à jour toutes les 10ms
+                }
+            }
+        };
+    }
+
+    private void updateTimerDisplay(long elapsedTime) {
+        int minutes = (int) (elapsedTime / 60000);
+        int seconds = (int) ((elapsedTime % 60000) / 1000);
+        int milliseconds = (int) ((elapsedTime % 1000) / 10);
+
+        String timeText = String.format("%02d:%02d:%02d", minutes, seconds, milliseconds);
+        timerText.setText(timeText);
+    }
+
+    private void startTimer() {
+        if (!isTimerRunning) {
+            startTime = System.currentTimeMillis();
+            isTimerRunning = true;
+            timerHandler.post(timerRunnable);
+        }
     }
 
     private void initializeScreenDimensions() {
@@ -273,6 +316,8 @@ public class Level1Activity extends AppCompatActivity implements SensorEventList
         }
 
         if(characterY <= player.getHeight()+100) {
+            MainActivity.scoreNvx1 = "Niveau 1 : " + timerText.getText().toString();
+            LevelEndActivity.score = timerText.getText().toString();
             LevelEndActivity.toGo = Level2Activity.class;
             Intent homeIntent = new Intent(Level1Activity.this, LevelEndActivity.class);
             homeIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);

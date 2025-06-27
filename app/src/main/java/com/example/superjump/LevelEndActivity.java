@@ -9,7 +9,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 public class LevelEndActivity extends AppCompatActivity {
     public static Class<?> toGo;
-
+    public static String score = "";
     private TextView textScore;
     private Button buttonReplay, buttonHome, buttonNext;
 
@@ -24,7 +24,7 @@ public class LevelEndActivity extends AppCompatActivity {
         buttonNext = findViewById(R.id.buttonNext);
 
         // Récupérer le score depuis l'intent
-        int score = getIntent().getIntExtra("score", 0);
+        //int score = getIntent().getIntExtra("score", 0);
         textScore.setText("Score : " + score);
 
         // Bouton "Rejouer" → redirige vers l'accueil

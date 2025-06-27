@@ -5,6 +5,7 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="#7c0800"
     tools:context=".MainActivity">
 
     <!-- Container pour la page de loading -->
@@ -12,17 +13,18 @@
         android:id="@+id/loading_container"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical"
         android:gravity="center"
-        android:visibility="visible">
+        android:orientation="vertical"
+        android:visibility="visible"
+        tools:visibility="invisible">
 
         <!-- Logo de démarrage centré -->
         <ImageView
             android:id="@+id/splash_logo"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:src="@drawable/loading"
-            android:scaleType="centerCrop" />
+            android:scaleType="centerCrop"
+            android:src="@drawable/loading" />
 
     </LinearLayout>
 
@@ -32,15 +34,19 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
-        android:visibility="gone">
+        android:visibility="gone"
+        tools:visibility="visible">
 
         <!-- TabLayout pour les onglets -->
         <com.google.android.material.tabs.TabLayout
             android:id="@+id/tabLayout_menu"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="40dp"
+            android:background="#7c0800"
             app:tabGravity="fill"
-            app:tabMode="fixed">
+            app:tabMode="fixed"
+            app:tabSelectedTextColor="#fcfcfc">
 
             <com.google.android.material.tabs.TabItem
                 android:id="@+id/tabItem_jouer"
@@ -55,42 +61,72 @@
                 android:text="Scores" />
         </com.google.android.material.tabs.TabLayout>
 
-        <!-- Conteneur des boutons des niveaux -->
+
         <LinearLayout
-            android:id="@+id/buttons_container"
+            android:id="@+id/content_container"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:orientation="vertical"
+            android:layout_marginTop="16dp"
             android:gravity="center"
-            android:layout_marginTop="16dp">
-
+            android:orientation="vertical"
+            android:visibility="visible"
+            tools:visibility="gone">
+            <!-- Conteneur des boutons des niveaux -->
             <LinearLayout
-                android:id="@+id/layout_levels_buttons"
+                android:id="@+id/contenaire_boutons_niveaux"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:gravity="center">
+                android:gravity="center"
+                android:orientation="vertical">
 
                 <Button
                     android:id="@+id/bt_nvx1"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Niveau 1"/>
+                    android:backgroundTint="#fcfcfc"
+                    android:text="Niveau 1"
+                    android:textColor="#1e1e1e" />
 
                 <Button
                     android:id="@+id/bt_nvx2"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    android:text="Niveau 2"/>
+                    android:backgroundTint="#fcfcfc"
+                    android:text="Niveau 2"
+                    android:textColor="#1e1e1e" />
 
                 <Button
                     android:id="@+id/bt_nvx3"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    android:text="Niveau 3"/>
+                    android:backgroundTint="#fcfcfc"
+                    android:text="Niveau 3"
+                    android:textColor="#1e1e1e" />
             </LinearLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/layout_scores_buttons"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:visibility="visible"
+            tools:visibility="visible"> <!-- Initialement masqué -->
+
+
+            <TextView
+                android:id="@+id/txt_scores"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:fontFamily="@font/goldenage"
+                android:gravity="center_horizontal"
+                android:text="Mes scores"
+                android:textColor="#fcfcfc"
+                android:textStyle="bold" />
         </LinearLayout>
 
     </LinearLayout>
