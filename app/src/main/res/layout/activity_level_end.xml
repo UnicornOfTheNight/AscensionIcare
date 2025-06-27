@@ -20,6 +20,17 @@
         android:layout_marginBottom="40dp"
         android:fontFamily="@font/goldenagenoire"/>
 
+    <Button
+        android:id="@+id/buttonNext"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Niveau suivant"
+        android:background="#AAFFFFFF"
+        android:textColor="#000000"
+        android:elevation="4dp"
+        android:layout_marginBottom="16dp"
+        android:textStyle="bold"
+        android:fontFamily="@font/goldenagenoire"/>
 
     <!-- Bouton Rejouer -->
     <Button
@@ -45,4 +56,5 @@
         android:text="Accueil"
         android:textColor="#040404"
         android:textStyle="bold" />
+
 </LinearLayout>

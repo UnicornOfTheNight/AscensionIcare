@@ -273,7 +273,8 @@ public class Level1Activity extends AppCompatActivity implements SensorEventList
         }
 
         if(characterY <= player.getHeight()+100) {
-            Intent homeIntent = new Intent(Level1Activity.this, Level2Activity.class);
+            LevelEndActivity.toGo = Level2Activity.class;
+            Intent homeIntent = new Intent(Level1Activity.this, LevelEndActivity.class);
             homeIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
             startActivity(homeIntent);
             finish();

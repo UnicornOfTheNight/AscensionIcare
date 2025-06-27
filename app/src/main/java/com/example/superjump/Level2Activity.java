@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Level2Activity extends AppCompatActivity implements SensorEventListener {
+    public static String score = "";
     private ImageView character;
     private ImageView startPlatform;
     private PlatformCreationHelper platformCreator;
@@ -172,7 +173,8 @@ public class Level2Activity extends AppCompatActivity implements SensorEventList
             character.setY(characterY);
 
             if(characterY <= character.getHeight()+100) {
-                Intent homeIntent = new Intent(Level2Activity.this, Level4Activity.class);
+                LevelEndActivity.toGo = Level4Activity.class;
+                Intent homeIntent = new Intent(Level2Activity.this, LevelEndActivity.class);
                 homeIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
                 startActivity(homeIntent);
                 finish();

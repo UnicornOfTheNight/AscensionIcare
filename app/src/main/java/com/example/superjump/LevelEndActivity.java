@@ -8,9 +8,10 @@ import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 
 public class LevelEndActivity extends AppCompatActivity {
+    public static Class<?> toGo;
 
     private TextView textScore;
-    private Button buttonReplay, buttonHome;
+    private Button buttonReplay, buttonHome, buttonNext;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -20,6 +21,7 @@ public class LevelEndActivity extends AppCompatActivity {
         textScore = findViewById(R.id.textScore);
         buttonReplay = findViewById(R.id.buttonReplay);
         buttonHome = findViewById(R.id.buttonHome);
+        buttonNext = findViewById(R.id.buttonNext);
 
         // Récupérer le score depuis l'intent
         int score = getIntent().getIntExtra("score", 0);
@@ -42,6 +44,17 @@ public class LevelEndActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 Intent homeIntent = new Intent(LevelEndActivity.this, MainActivity.class);
+                homeIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                homeIntent.putExtra("goToTab", 0); // facultatif
+                startActivity(homeIntent);
+                finish();
+            }
+        });
+
+        buttonNext.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent homeIntent = new Intent(LevelEndActivity.this, toGo);
                 homeIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
                 homeIntent.putExtra("goToTab", 0); // facultatif
                 startActivity(homeIntent);
